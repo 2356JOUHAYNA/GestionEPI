@@ -1,0 +1,36 @@
+/* src/components/Sidebar.css */
+.sidebar {
+  position: fixed;
+  top: 60px; /* hauteur de la topbar si elle existe */
+  left: 0;
+  width: 200px;
+  height: calc(100% - 60px);
+  background-color: #2d3748;
+  color: white;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.sidebar h2 {
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #63b3ed;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin: 15px 0;
+}
+
+.sidebar ul li a {
+  color: white;
+  text-decoration: none;
+}
+
+.sidebar ul li a:hover {
+  color: #63b3ed;
+}
