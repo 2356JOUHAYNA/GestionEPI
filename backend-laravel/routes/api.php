@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\ManagerController;
 use App\Http\Controllers\Api\ServiceGenerauxController;
 use App\Http\Controllers\StockController;
 
+use App\Http\Controllers\Api\ReplenishController;
+use App\Http\Controllers\EpiController;
+use App\Http\Controllers\Api\AiForecastController;
 
 Route::prefix('epi')->group(function () {
     Route::get('/employes', [EmployeController::class, 'index']);
@@ -46,6 +49,12 @@ Route::prefix('epi')->group(function () {
     Route::get('/employes/{matricule}/pdf', [PDFController::class, 'generateAffectationPDF']);
     Route::get('/stocks', [StockController::class, 'index']);                    // stock courant
     Route::get('/stocks/{materiel}/history', [StockController::class, 'history']); // historique
-    Route::post('/stocks/move', [StockController::class, 'store']); 
+    Route::get('/stocks', [StockController::class, 'stocks']);
+    Route::get('/previsions', [StockController::class, 'previsions']);
+    Route::get('/reco-appro', [StockController::class, 'recommandations']);
+    
+    
+    Route::get('/ai/health',   [AiForecastController::class, 'health']);
+    Route::post('/forecast',   [AiForecastController::class, 'forecast']); // POST /api/epi/forecast
 });
 
