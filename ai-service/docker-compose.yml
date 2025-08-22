@@ -1,0 +1,8 @@
+# docker-compose.yml
+services:
+  ai:
+    build: .
+    container_name: epi-ai
+    ports:
+      - "8001:8000"   # host:container  ✅
+    restart: unless-stopped

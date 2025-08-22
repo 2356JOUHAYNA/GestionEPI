@@ -1,16 +1,15 @@
+// src/_nav.js
 import React from 'react'
 import CIcon from '@coreui/icons-react'
 import {
   cilSpeedometer,
-  cilClipboard,
   cilCalculator,
   cilChartPie,
+  cilChartLine,
   cilBell,
   cilDescription,
   cilDrop,
-  cilNotes,
   cilPuzzle,
-  cilCursor,
   cilPencil,
   cilStar,
 } from '@coreui/icons'
@@ -23,16 +22,8 @@ const _nav = [
     to: '/dashboard',
     icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
   },
-  {
-    component: CNavItem,
-    name: 'Affectations',
-    to: '/affectation',
-    icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavTitle,
-    name: 'Thèmes',
-  },
+
+  { component: CNavTitle, name: 'Thèmes' },
   {
     component: CNavItem,
     name: 'Couleurs',
@@ -45,26 +36,16 @@ const _nav = [
     to: '/theme/typography',
     icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
   },
-  {
-    component: CNavTitle,
-    name: 'Composants',
-  },
+
+  { component: CNavTitle, name: 'Composants' },
   {
     component: CNavGroup,
     name: 'Base',
     to: '/base',
     icon: <CIcon icon={cilPuzzle} customClassName="nav-icon" />,
     items: [
-      {
-        component: CNavItem,
-        name: 'Cards',
-        to: '/base/cards',
-      },
-      {
-        component: CNavItem,
-        name: 'Tables',
-        to: '/base/tables',
-      },
+      { component: CNavItem, name: 'Cards', to: '/base/cards' },
+      { component: CNavItem, name: 'Tables', to: '/base/tables' },
     ],
   },
   {
@@ -84,15 +65,10 @@ const _nav = [
     name: 'Widgets',
     to: '/widgets',
     icon: <CIcon icon={cilCalculator} customClassName="nav-icon" />,
-    badge: {
-      color: 'info',
-      text: 'Nouveau',
-    },
+    badge: { color: 'info', text: 'Nouveau' },
   },
-  {
-    component: CNavTitle,
-    name: 'Pages',
-  },
+
+  { component: CNavTitle, name: 'Pages' },
   {
     component: CNavItem,
     name: 'Login',
@@ -110,6 +86,14 @@ const _nav = [
     name: 'Documentation',
     href: 'https://coreui.io/react/docs/',
     icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
+  },
+
+  { component: CNavTitle, name: 'EPI' },
+  {
+    component: CNavItem,
+    name: 'Prévision EPI',
+    to: '/epi/forecast',
+    icon: <CIcon icon={cilChartLine} customClassName="nav-icon" />,
   },
 ]
 

@@ -4,6 +4,7 @@ import AffectationForm from './views/AffectationForm/AffectationForm'
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
 const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
+const Forecast = React.lazy(() => import('./views/Forecast'))
 
 // Base
 const Accordion = React.lazy(() => import('./views/base/accordion/Accordion'))
@@ -99,6 +100,8 @@ const routes = [
   { path: '/notifications/modals', name: 'Modals', element: Modals },
   { path: '/notifications/toasts', name: 'Toasts', element: Toasts },
   { path: '/widgets', name: 'Widgets', element: Widgets },
+  { path: '/epi/forecast', name: 'Prévision EPI', element: Forecast },
+  { path: '/epi/alerts', name: 'Alerts', element: Forecast },
 ]
 
 export default routes

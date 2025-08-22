@@ -1,6 +1,6 @@
+// src/components/AppSidebar.js
 import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-
 import {
   CCloseButton,
   CSidebar,
@@ -9,15 +9,14 @@ import {
   CSidebarHeader,
   CSidebarToggler,
 } from '@coreui/react'
-import CIcon from '@coreui/icons-react'
 
 import { AppSidebarNav } from './AppSidebarNav'
-
-import { logo } from 'src/assets/brand/logo'
-import { sygnet } from 'src/assets/brand/sygnet'
-
-// sidebar nav config
 import navigation from '../_nav'
+
+// ⬇️ importe ton logo (grand) ; mets le vrai nom de fichier si différent
+import menaraLogo from 'src/assets/images/logo-menara.png'
+// (optionnel) logo compact quand la sidebar est réduite ; tu peux réutiliser le même
+import menaraLogoSmall from 'src/assets/images/logo-menara.png'
 
 const AppSidebar = () => {
   const dispatch = useDispatch()
@@ -31,22 +30,37 @@ const AppSidebar = () => {
       position="fixed"
       unfoldable={unfoldable}
       visible={sidebarShow}
-      onVisibleChange={(visible) => {
-        dispatch({ type: 'set', sidebarShow: visible })
-      }}
+      onVisibleChange={(visible) => dispatch({ type: 'set', sidebarShow: visible })}
     >
       <CSidebarHeader className="border-bottom">
         <CSidebarBrand to="/">
-          <CIcon customClassName="sidebar-brand-full" icon={logo} height={32} />
-          <CIcon customClassName="sidebar-brand-narrow" icon={sygnet} height={32} />
+          {/* Logo plein (sidebar ouverte) */}
+          <img
+            src={menaraLogo}
+            alt="Menara"
+            className="sidebar-brand-full"
+            height={36}
+            style={{ objectFit: 'contain' }}
+          />
+          {/* Logo réduit (sidebar repliée) */}
+          <img
+            src={menaraLogoSmall}
+            alt="Menara"
+            className="sidebar-brand-narrow"
+            height={28}
+            style={{ objectFit: 'contain' }}
+          />
         </CSidebarBrand>
+
         <CCloseButton
           className="d-lg-none"
           dark
           onClick={() => dispatch({ type: 'set', sidebarShow: false })}
         />
       </CSidebarHeader>
+
       <AppSidebarNav items={navigation} />
+
       <CSidebarFooter className="border-top d-none d-lg-flex">
         <CSidebarToggler
           onClick={() => dispatch({ type: 'set', sidebarUnfoldable: !unfoldable })}

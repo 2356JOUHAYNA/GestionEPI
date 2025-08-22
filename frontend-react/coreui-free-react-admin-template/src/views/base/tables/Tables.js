@@ -13,7 +13,7 @@ const months = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct'
 
 const ServiceGenerauxByMatricule = () => {
   const [matricule, setMatricule] = useState('')
-  const [pdfNomEmploye, setPdfNomEmploye] = useState('')        // nom uniquement pour le PDF
+  const [pdfNomEmploye, setPdfNomEmploye] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [employe, setEmploye] = useState(null)
@@ -25,18 +25,29 @@ const ServiceGenerauxByMatricule = () => {
   // Charger le catalogue des matériels
   useEffect(() => {
     axios.get(`${BASE_URL}/materiels`)
-      .then(res => setCatalogue(Array.isArray(res.data) ? res.data : []))
+      .then(res => {
+        const arr = Array.isArray(res.data) ? res.data : []
+        // normalise le nom du matériel si besoin (nom/libelle)
+        setCatalogue(arr.map(m => ({
+          ...m,
+          nom: m?.nom ?? m?.libelle ?? '—'
+        })))
+      })
       .catch(() => setCatalogue([]))
   }, [])
 
-  // Charger tailles d’un matériel (cache par id matériel)
+  // Charger tailles d’un matériel (cache par id matériel) + normaliser libellé
   const fetchTailles = async (materielId) => {
     if (!materielId || taillesByMateriel[materielId]) return
     try {
       const { data } = await axios.get(`${BASE_URL}/materiels/${materielId}/tailles`)
-      setTaillesByMateriel(prev => ({ ...prev, [materielId]: Array.isArray(data) ? data : [] }))
+      const list = (Array.isArray(data) ? data : []).map(t => ({
+        id: t.id,
+        libelle: t.libelle ?? t.nom ?? '—',  // << fallback
+      }))
+      setTaillesByMateriel(prev => ({ ...prev, [materielId]: list }))
     } catch {
-      // ignore
+      setTaillesByMateriel(prev => ({ ...prev, [materielId]: [] }))
     }
   }
 
@@ -60,26 +71,29 @@ const ServiceGenerauxByMatricule = () => {
       source.forEach(aff => {
         const details = Array.isArray(aff.details) ? aff.details : []
         details.forEach(d => {
-          // essaie de récupérer la fréquence au bon endroit
-          const frequence = d.frequence ?? d?.materiel?.frequence ?? null
-          const frequence_label = d.frequence_label ?? d?.materiel?.frequence_label ?? null
+          const frequence = d?.frequence ?? d?.materiel?.frequence ?? null
+          const frequence_label = d?.frequence_label ?? d?.materiel?.frequence_label ?? null
+          const materielId = d?.materiel?.id
+          const materielNom = d?.materiel?.nom ?? d?.materiel?.libelle ?? '—'
+          const tailleId = d?.taille?.id
+          const tailleLib = d?.taille?.libelle ?? d?.taille?.nom ?? '—'
 
           flat.push({
             lineKey: `${aff.id}-${d.id}`,
             affectation_id: aff.id,
             detail_id: d.id,
-            materiel_id: d?.materiel?.id,
-            materiel_nom: d?.materiel?.nom ?? '—',
-            taille_id: d?.taille?.id,
-            taille_libelle: d?.taille?.libelle ?? '—',
+            materiel_id: materielId,
+            materiel_nom: materielNom,
+            taille_id: tailleId,
+            taille_libelle: tailleLib,
             quantite_disponible: d?.quantite_restante ?? d?.quantite ?? 0,
-            frequence,           // pour affichage
-            frequence_label,     // joli label si tu l’envoies côté API
+            frequence,
+            frequence_label,
             distribuer_qte: 1,
             mois: new Array(12).fill(false),
           })
 
-          if (d?.materiel?.id) fetchTailles(d.materiel.id)
+          if (materielId) fetchTailles(materielId)
         })
       })
 
@@ -105,8 +119,9 @@ const ServiceGenerauxByMatricule = () => {
       const l = { ...prev[idx] }
       const mat = catalogue.find(m => String(m.id) === String(newMaterielId))
       l.materiel_id = newMaterielId
-      l.materiel_nom = mat ? mat.nom : l.materiel_nom
+      l.materiel_nom = mat ? (mat.nom ?? mat.libelle ?? '—') : l.materiel_nom
       l.taille_id = ''
+      l.taille_libelle = '—'
       return prev.map((row, i) => (i === idx ? l : row))
     })
     fetchTailles(newMaterielId)
@@ -122,7 +137,7 @@ const ServiceGenerauxByMatricule = () => {
     })
   }
 
-  // Distribuer UNE ligne (sans choisir l’employé dans le tableau)
+  // Distribuer UNE ligne
   const distributeOne = async (idx) => {
     const row = lignes[idx]
     if (!row.distribuer_qte || row.distribuer_qte < 1) return alert('Quantité invalide.')
@@ -146,7 +161,7 @@ const ServiceGenerauxByMatricule = () => {
     }
   }
 
-  // PDF d’une ligne : on envoie seulement le nom saisi pour l’impression
+  // PDF d’une ligne
   const printPDF = (idx) => {
     const row = lignes[idx]
     if (!pdfNomEmploye.trim()) return alert("Saisis le nom de l'employé pour le PDF.")
@@ -154,14 +169,14 @@ const ServiceGenerauxByMatricule = () => {
     window.open(url, '_blank')
   }
 
-  // PDF fiche employé complète (si tu gardes cette route)
+  // PDF fiche employé complète
   const printPDFEmploye = () => {
     if (!employe) return
     const url = `${BASE_URL}/employes/${encodeURIComponent(employe.matricule)}/pdf?nom=${encodeURIComponent(pdfNomEmploye)}`
     window.open(url, '_blank')
   }
 
-  // Suppression d’une ligne d’affectation (stock manager)
+  // Suppression d’une ligne d’affectation
   const deleteLine = async (row) => {
     if (!window.confirm('Supprimer cette ligne d’affectation ?')) return
     try {
@@ -334,24 +349,30 @@ const ServiceGenerauxByMatricule = () => {
                           <CTableRow key={row.lineKey} className="align-middle">
                             <CTableDataCell style={{ minWidth: 220 }}>
                               <CFormSelect
-                                value={row.materiel_id}
+                                value={row.materiel_id ?? ''}
                                 onChange={e => handleChangeMateriel(idx, e.target.value)}
                                 style={{ borderRadius: 6, border: '2px solid #e2e8f0' }}
                               >
+                                <option value="" disabled>— Sélectionner —</option>
                                 {catalogue.map(m => (
-                                  <option key={m.id} value={m.id}>{m.nom}</option>
+                                  <option key={m.id} value={m.id}>{m.nom ?? m.libelle ?? '—'}</option>
                                 ))}
                               </CFormSelect>
                             </CTableDataCell>
 
                             <CTableDataCell style={{ minWidth: 140 }}>
                               <CFormSelect
-                                value={row.taille_id}
+                                value={row.taille_id ?? ''}
                                 onChange={e => handleChangeLigne(idx, 'taille_id', e.target.value)}
                                 style={{ borderRadius: 6, border: '2px solid #e2e8f0' }}
                               >
-                                {(taillesByMateriel[row.materiel_id] || [{ id: row.taille_id, libelle: row.taille_libelle }]).map(t => (
-                                  <option key={t.id} value={t.id}>{t.libelle}</option>
+                                <option value="" disabled>— Sélectionner —</option>
+                                {(taillesByMateriel[row.materiel_id]
+                                  ?? [{ id: row.taille_id, libelle: row.taille_libelle }])
+                                  .map(t => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.libelle ?? t.nom ?? '—'}
+                                    </option>
                                 ))}
                               </CFormSelect>
                             </CTableDataCell>
