@@ -29,6 +29,15 @@ const _nav = [
     to: '/affectation',
     icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />,
   },
+
+  // 👉 AJOUT : lien Managers
+  {
+    component: CNavItem,
+    name: 'Managers',
+    to: '/manager',
+    icon: <CIcon icon={cilCursor} customClassName="nav-icon" />,
+  },
+
   {
     component: CNavTitle,
     name: 'Thèmes',
@@ -45,6 +54,21 @@ const _nav = [
     to: '/theme/typography',
     icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
   },
+  // 👉 Ajout : lien vers ta nouvelle page Matériel
+  {
+    component: CNavItem,
+    name: 'Matériel',
+    to: '/theme/materiel',
+    icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
+  },
+  // 👉 AJOUT : lien Employés
+  {
+    component: CNavItem,
+    name: 'Employés',
+    to: '/theme/employer',
+    icon: <CIcon icon={cilCursor} customClassName="nav-icon" />,
+  },
+
   {
     component: CNavTitle,
     name: 'Composants',

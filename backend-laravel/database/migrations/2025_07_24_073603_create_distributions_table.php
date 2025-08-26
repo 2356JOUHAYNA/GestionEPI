@@ -10,19 +10,28 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
-        Schema::create('distributions', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('affectation_id')->constrained('affectations')->onDelete('cascade');
-    $table->foreignId('materiel_id')->constrained('materiels')->onDelete('cascade');
-    $table->integer('quantite');
-    $table->string('taille')->nullable();
-    $table->string('mois_distribution');
-    $table->text('signature_employe')->nullable();
-    $table->timestamps();
-});
-
+{
+    if (Schema::hasTable('distributions')) {
+        // La table existe déjà → on arrête
+        return;
     }
+
+    Schema::create('distributions', function (Blueprint $table) {
+        $table->id();
+        $table->unsignedBigInteger('affectation_id');
+        $table->unsignedBigInteger('materiel_id');
+        $table->integer('quantite');
+        $table->string('taille')->nullable();
+        $table->string('mois_distribution');
+        $table->text('signature_employe')->nullable();
+        $table->timestamps();
+
+        // Clés étrangères si besoin
+        $table->foreign('affectation_id')->references('id')->on('affectations')->onDelete('cascade');
+        $table->foreign('materiel_id')->references('id')->on('materiels')->onDelete('cascade');
+    });
+}
+
 
     /**
      * Reverse the migrations.

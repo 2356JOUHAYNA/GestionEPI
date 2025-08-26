@@ -6,6 +6,7 @@ use App\Models\Materiel;
 use App\Models\Stock;
 use App\Services\StockService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
@@ -24,17 +25,25 @@ class StockController extends Controller
     }
 
     // Historique d’un matériel
-    public function history($materielId)
-    {
-        $rows = Stock::with('materiel:id,nom')
-            ->forMateriel($materielId)
-            ->orderByDesc('date_mouvement')
-            ->orderByDesc('id')
-            ->get();
+   
+   public function history($materielId)
+{
+    $rows = DB::table('stocks as s')
+        ->leftJoin('tailles as t', 't.id', '=', 's.taille_id')
+        ->where('s.materiel_id', $materielId)
+        ->orderByDesc('s.date_mouvement')
+        ->select(
+            's.date_mouvement',
+            's.type_mouvement',
+            's.quantite',
+            's.motif',
+            's.taille_id',
+            DB::raw('t.nom as taille_nom')
+        )
+        ->get();
 
-        return response()->json($rows);
-    }
-
+    return response()->json($rows);
+}
     // Enregistrer un mouvement (entrée / sortie / ajustement)
     public function store(Request $request)
     {
@@ -51,4 +60,6 @@ class StockController extends Controller
         $row = $this->service->move($data);
         return response()->json(['message'=>'Mouvement enregistré','data'=>$row], 201);
     }
+
+    
 }

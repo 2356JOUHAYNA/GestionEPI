@@ -10,16 +10,20 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
-        Schema::create('tailles', function (Blueprint $table) {
-    $table->id();
-    $table->unsignedBigInteger('materiel_id');
-    $table->string('valeur'); // ex: "S", "M", "L", "56", "XL"
-    $table->timestamps();
-
-    $table->foreign('materiel_id')->references('id')->on('materiels')->onDelete('cascade');
-});
+{
+    if (Schema::hasTable('tailles')) {
+        return; // la table existe déjà -> on ne recrée pas
     }
+
+    Schema::create('tailles', function (Blueprint $table) {
+        $table->id();
+        $table->unsignedBigInteger('materiel_id');
+        $table->string('valeur');              // ou 'nom' selon ton schéma cible
+        $table->timestamps();
+
+        $table->foreign('materiel_id')->references('id')->on('materiels')->onDelete('cascade');
+    });
+}
 
     /**
      * Reverse the migrations.

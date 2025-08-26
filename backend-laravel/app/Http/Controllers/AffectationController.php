@@ -34,9 +34,9 @@ class AffectationController extends Controller
 
             // ✅ Création de l'affectation principale
             $affectation = Affectation::create([
-                'manager_id' => $validated['manager_id'],
-                'date' => $formattedDate,
-                'commentaire' => $validated['commentaire'] ?? null,
+                'manager_id'        => $validated['manager_id'],
+                'date_affectation'  => $formattedDate, // ← mapping vers la vraie colonne BDD
+                'commentaire'       => $validated['commentaire'] ?? null,
             ]);
 
             // 📦 Enregistrement des détails (matériels et tailles)
@@ -44,9 +44,9 @@ class AffectationController extends Controller
                 foreach ($aff['tailles'] as $taille) {
                     DetailAffectation::create([
                         'affectation_id' => $affectation->id,
-                        'materiel_id' => $aff['materiel_id'],
-                        'taille_id' => $taille['taille_id'],
-                        'quantite' => $taille['quantite'],
+                        'materiel_id'    => $aff['materiel_id'],
+                        'taille_id'      => $taille['taille_id'],
+                        'quantite'       => $taille['quantite'],
                     ]);
                 }
             }

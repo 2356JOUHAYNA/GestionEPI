@@ -11,13 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('fonctions', function (Blueprint $table) {
-    $table->id();
-    $table->string('nom_fonction');
-    $table->text('description')->nullable();
-    $table->timestamps();
-});
+        if (!Schema::hasTable('affectations')) {
+            Schema::create('affectations', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('employe_id');
+                $table->date('date');
+                $table->string('commentaire')->nullable();
+                $table->timestamps();
 
+                // FK (si la table employes existe)
+                $table->foreign('employe_id')
+                      ->references('id')
+                      ->on('employes')
+                      ->onDelete('cascade');
+            });
+        }
     }
 
     /**
@@ -25,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('fonctions');
+        Schema::dropIfExists('affectations');
     }
 };

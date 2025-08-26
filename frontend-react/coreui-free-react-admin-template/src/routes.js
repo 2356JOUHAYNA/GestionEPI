@@ -4,6 +4,12 @@ import AffectationForm from './views/AffectationForm/AffectationForm'
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
 const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
+// 👉 ajout
+const Materiel = React.lazy(() => import('./views/theme/Materiel/Materiel'))
+// 👉 ajout Managers (corrigé)
+const Manager = React.lazy(() => import('./views/theme/Manager/manager'))
+// 👉 ajout Employés
+const Employer = React.lazy(() => import('./views/theme/Employer/employer'))   // <- NEW
 
 // Base
 const Accordion = React.lazy(() => import('./views/base/accordion/Accordion'))
@@ -59,6 +65,13 @@ const routes = [
   { path: '/theme', name: 'Theme', element: Colors, exact: true },
   { path: '/theme/colors', name: 'Colors', element: Colors },
   { path: '/theme/typography', name: 'Typography', element: Typography },
+  // 👉 ajout route Matériel
+  { path: '/theme/materiel', name: 'Matériel', element: Materiel },
+  // 👉 ajout route Managers
+  { path: '/manager', name: 'Managers', element: Manager },
+  // 👉 ajout route Employés
+  { path: '/theme/employer', name: 'Employés', element: Employer },          // <- NEW
+
   { path: '/base', name: 'Base', element: Cards, exact: true },
   { path: '/base/accordion', name: 'Accordion', element: Accordion },
   { path: '/base/breadcrumbs', name: 'Breadcrumbs', element: Breadcrumbs },
