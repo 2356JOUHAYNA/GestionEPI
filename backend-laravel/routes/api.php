@@ -15,7 +15,7 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\Api\ReplenishController;
 use App\Http\Controllers\EpiController;
 use App\Http\Controllers\Api\AiForecastController;
-
+use App\Http\Controllers\ChatController;
 Route::prefix('epi')->group(function () {
     Route::get('/employes', [EmployeController::class, 'index']);
     Route::get('/materiels', [MaterielController::class, 'index']);
@@ -46,15 +46,30 @@ Route::prefix('epi')->group(function () {
 
     // PDF
     Route::get('/distributions/pdf/{affectationId}/{detailId}/{employeId}', [PDFController::class, 'distributionLinePDF']);
-    Route::get('/employes/{matricule}/pdf', [PDFController::class, 'generateAffectationPDF']);
+   
     Route::get('/stocks', [StockController::class, 'index']);                    // stock courant
     Route::get('/stocks/{materiel}/history', [StockController::class, 'history']); // historique
     Route::get('/stocks', [StockController::class, 'stocks']);
     Route::get('/previsions', [StockController::class, 'previsions']);
     Route::get('/reco-appro', [StockController::class, 'recommandations']);
-    
+    Route::get('/distributions/pdf-employe-jour/{employeId}', [PDFController::class, 'distributionsDuJourPourEmploye'])
+    ->whereNumber('employeId')
+    ->name('epi.distributions.employe-jour-pdf');
     
     Route::get('/ai/health',   [AiForecastController::class, 'health']);
     Route::post('/forecast',   [AiForecastController::class, 'forecast']); // POST /api/epi/forecast
+    
+
+    
+
+   
+
+    Route::post('/chat', [ChatController::class, 'handle']);
+
+// (option debug pour tester en GET dans le navigateur)
+    Route::get('/chat/test', fn() => response()->json(['ok' => true]));
+   Route::get('/distributions/pdf/{affectation}/{detail}', 
+    [PDFController::class, 'generateAffectationPDF']);
+    
 });
 

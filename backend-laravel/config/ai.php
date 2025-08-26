@@ -1,4 +1,3 @@
-// config/ai.php
 <?php
 
 return [
