@@ -18,6 +18,6 @@ class Materiel extends Model
     }
     public function frequences()
 {
-    return $this->hasMany(FrequenceMateriel::class);
+    return $this->hasMany(\App\Models\FrequenceMateriel::class, 'materiel_id', 'id');
 }
 }

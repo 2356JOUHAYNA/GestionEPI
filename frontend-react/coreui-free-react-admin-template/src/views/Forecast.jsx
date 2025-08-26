@@ -7,6 +7,7 @@ import {
   CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell,
   CAlert, CSpinner, CBadge,
 } from '@coreui/react'
+import Chatbot from '../components/Chatbot'
 
 const SAMPLE_SERIES = {
   horizon_months: 6,
@@ -78,15 +79,12 @@ export default function Forecast() {
       }
 
       const { data } = await api.post('/epi/forecast', payload)
-      // On récupère éventuellement un message 'error' ou 'note' renvoyé par le backend
       if (data?.error) setError(String(data.error))
       setRows(Array.isArray(data?.forecasts) ? data.forecasts : [])
-      // si backend renvoie une note informative
       if (!data?.forecasts?.length && data?.note && !data?.error) {
         setError(String(data.note))
       }
     } catch (err) {
-      // Essaye de sortir un message parlant
       const msg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
@@ -470,6 +468,9 @@ export default function Forecast() {
           )}
         </CCardBody>
       </CCard>
+
+      {/* Chatbot flottant disponible sur la page Forecast */}
+      <Chatbot />
     </div>
   )
 }

@@ -24,13 +24,12 @@ const ServiceGenerauxByMatricule = () => {
 
   // Charger le catalogue des matériels
   useEffect(() => {
-    axios.get(`${BASE_URL}/materiels`)
+    axios.get(`${BASE_URL}/materiels`, { headers: { Accept: 'application/json' } })
       .then(res => {
         const arr = Array.isArray(res.data) ? res.data : []
-        // normalise le nom du matériel si besoin (nom/libelle)
         setCatalogue(arr.map(m => ({
           ...m,
-          nom: m?.nom ?? m?.libelle ?? '—'
+          nom: m?.nom ?? m?.libelle ?? '—',
         })))
       })
       .catch(() => setCatalogue([]))
@@ -40,10 +39,10 @@ const ServiceGenerauxByMatricule = () => {
   const fetchTailles = async (materielId) => {
     if (!materielId || taillesByMateriel[materielId]) return
     try {
-      const { data } = await axios.get(`${BASE_URL}/materiels/${materielId}/tailles`)
+      const { data } = await axios.get(`${BASE_URL}/materiels/${materielId}/tailles`, { headers: { Accept: 'application/json' } })
       const list = (Array.isArray(data) ? data : []).map(t => ({
         id: t.id,
-        libelle: t.libelle ?? t.nom ?? '—',  // << fallback
+        libelle: t.libelle ?? t.nom ?? '—',
       }))
       setTaillesByMateriel(prev => ({ ...prev, [materielId]: list }))
     } catch {
@@ -60,11 +59,17 @@ const ServiceGenerauxByMatricule = () => {
     setLignes([])
 
     try {
-      const empRes = await axios.get(`${BASE_URL}/employes/${encodeURIComponent(matricule)}`)
+      const empRes = await axios.get(
+        `${BASE_URL}/employes/${encodeURIComponent(matricule)}`,
+        { headers: { Accept: 'application/json' } }
+      )
       const emp = empRes.data
       setEmploye(emp)
 
-      const affRes = await axios.get(`${BASE_URL}/employes/${encodeURIComponent(matricule)}/manager-affectations`)
+      const affRes = await axios.get(
+        `${BASE_URL}/employes/${encodeURIComponent(matricule)}/manager-affectations`,
+        { headers: { Accept: 'application/json' } }
+      )
       const source = Array.isArray(affRes.data) ? affRes.data : []
 
       const flat = []
@@ -140,57 +145,74 @@ const ServiceGenerauxByMatricule = () => {
   // Distribuer UNE ligne
   const distributeOne = async (idx) => {
     const row = lignes[idx]
+    if (!employe) return alert("Aucun employé chargé.")
     if (!row.distribuer_qte || row.distribuer_qte < 1) return alert('Quantité invalide.')
     if (row.distribuer_qte > row.quantite_disponible) return alert('Quantité demandée > disponible.')
 
     try {
       setSaving(true)
       await axios.post(`${BASE_URL}/distributions`, {
+        employe_id: employe.id,
         affectation_id: row.affectation_id,
         detail_id: row.detail_id,
         quantite: row.distribuer_qte,
-        override_materiel_id: row.materiel_id,
-        override_taille_id: row.taille_id,
+        override_materiel_id: row.materiel_id || null,
+        override_taille_id: row.taille_id || null,
         trace_mois: row.mois,
       })
       await search()
-    } catch {
-      alert('❌ Erreur distribution.')
+    } catch (err) {
+      const msg = err?.response?.data?.message
+        || (typeof err?.response?.data === 'string' ? err.response.data : null)
+        || 'Erreur distribution.'
+      alert(`❌ ${msg}`)
     } finally {
       setSaving(false)
     }
   }
 
-  // PDF d’une ligne
+  // ✅ PDF d’une affectation + un de ses détails
+  // Route: GET /api/epi/distributions/pdf/{affectation}/{detail}?nom=...
   const printPDF = (idx) => {
     const row = lignes[idx]
-    if (!pdfNomEmploye.trim()) return alert("Saisis le nom de l'employé pour le PDF.")
-    const url = `${BASE_URL}/distributions/pdf/${row.affectation_id}/${row.detail_id}?nom=${encodeURIComponent(pdfNomEmploye)}`
+    if (!row) return
+    if (!row.affectation_id || !row.detail_id) {
+      return alert("IDs manquants : affectation ou détail.")
+    }
+    const nomParam = pdfNomEmploye.trim()
+      ? `?nom=${encodeURIComponent(pdfNomEmploye.trim())}`
+      : ''
+    const url = `${BASE_URL}/distributions/pdf/${row.affectation_id}/${row.detail_id}${nomParam}`
     window.open(url, '_blank')
   }
 
-  // PDF fiche employé complète
-  const printPDFEmploye = () => {
-    if (!employe) return
-    const url = `${BASE_URL}/employes/${encodeURIComponent(employe.matricule)}/pdf?nom=${encodeURIComponent(pdfNomEmploye)}`
-    window.open(url, '_blank')
-  }
+  // (Optionnel) PDF fiche employé complète — à adapter si tu utilises une autre route
+  // Fiche PDF : toutes les distributions de l’employé pour aujourd’hui
+const printPDFEmploye = () => {
+  if (!employe?.id) return
+  const params = pdfNomEmploye.trim()
+    ? `?nom=${encodeURIComponent(pdfNomEmploye.trim())}`  // optionnel si tu l’utilises
+    : ''
+  const url = `${BASE_URL}/distributions/pdf-employe-jour/${employe.id}${params}`
+  window.open(url, '_blank')
+}
+
 
   // Suppression d’une ligne d’affectation
   const deleteLine = async (row) => {
     if (!window.confirm('Supprimer cette ligne d’affectation ?')) return
     try {
       setSaving(true)
-      await axios.delete(`${BASE_URL}/affectations/${row.affectation_id}/details/${row.detail_id}`)
+      await axios.delete(`${BASE_URL}/affectations/${row.affectation_id}/details/${row.detail_id}`, { headers: { Accept: 'application/json' } })
       await search()
-    } catch {
-      alert('❌ Suppression impossible.')
+    } catch (e) {
+      const msg = e?.response?.data ? JSON.stringify(e.response.data) : 'Suppression impossible.'
+      alert('❌ ' + msg)
     } finally {
       setSaving(false)
     }
   }
 
-  // Format d’affichage de la fréquence
   const renderFreq = (row) => {
     if (row.frequence_label) return row.frequence_label
     if (row.frequence) return String(row.frequence)
@@ -368,7 +390,7 @@ const ServiceGenerauxByMatricule = () => {
                               >
                                 <option value="" disabled>— Sélectionner —</option>
                                 {(taillesByMateriel[row.materiel_id]
-                                  ?? [{ id: row.taille_id, libelle: row.taille_libelle }])
+                                  ?? (row.taille_id ? [{ id: row.taille_id, libelle: row.taille_libelle }] : []))
                                   .map(t => (
                                     <option key={t.id} value={t.id}>
                                       {t.libelle ?? t.nom ?? '—'}
@@ -396,9 +418,9 @@ const ServiceGenerauxByMatricule = () => {
                               <CFormInput
                                 type="number"
                                 min="1"
-                                max={row.quantite_disponible}
+                                max={Number(row.quantite_disponible) || 1}
                                 value={row.distribuer_qte}
-                                onChange={e => handleChangeLigne(idx, 'distribuer_qte', Number(e.target.value))}
+                                onChange={e => handleChangeLigne(idx, 'distribuer_qte', Math.max(1, Number(e.target.value) || 1))}
                                 style={{ borderRadius: 6, border: '2px solid #e2e8f0', textAlign: 'center' }}
                               />
                             </CTableDataCell>
