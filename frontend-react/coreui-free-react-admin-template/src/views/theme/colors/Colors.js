@@ -1,7 +1,8 @@
+// src/views/theme/Materiel/MaterielCrud.js
 import React, { useEffect, useMemo, useState } from 'react'
 import {
-  CCard, CCardBody,
-  CRow, CCol,
+  CCard, CCardBody, CCardHeader,
+  CRow, CCol, CContainer,
   CForm, CFormLabel, CFormInput, CFormSelect, CButton,
   CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell,
   CAlert, CSpinner, CBadge,
@@ -86,7 +87,6 @@ const MaterielCrud = () => {
       const catRes = await axios.get(`${BASE_URL}/categories`, { headers: { Accept: 'application/json' } })
       setCategories(Array.isArray(catRes.data) ? catRes.data : catRes.data?.data ?? [])
 
-      // lecture agrégée – ce endpoint doit retourner tailles + quantités courantes
       let mats = []
       try {
         const withAgg = await axios.get(`${BASE_URL}/materiels/with-tailles-agg`, { headers: { Accept: 'application/json' } })
@@ -96,9 +96,8 @@ const MaterielCrud = () => {
           const stock_total = tailles.reduce((s, t) => s + (Number(t.quantite) || 0), 0)
           return { ...m, tailles, stock_total }
         })
-      } catch (e) {
-        console.error('with-tailles-agg error:', e?.response?.data || e)
-      }
+      } catch (e) { console.error('with-tailles-agg error:', e?.response?.data || e) }
+
       setMateriels(mats)
     } catch (e) {
       console.error(e)
@@ -159,7 +158,6 @@ const MaterielCrud = () => {
     const typeNorm = mapType(mvtType)
     const dateToUse = mvtDate || new Date().toISOString().split('T')[0]
 
-    // agrégation par taille_id
     const agg = new Map()
     for (const r of rows) {
       const q = Number(r.quantite || 0)
@@ -188,7 +186,6 @@ const MaterielCrud = () => {
 
     try {
       await axios.post(`${BASE_URL}/mouvements`, payload, { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })
-      // reset
       setMaterielChoisiId(''); setCategorieId(''); setStockGlobal(''); setTaillesDuMateriel([]); clearRows()
       setMvtType('Entrée'); setMvtDate('')
       await loadAll()
@@ -250,7 +247,6 @@ const MaterielCrud = () => {
     setSaving(true); setError(null)
 
     try {
-      // 1) update nom/catégorie si changé
       const body = {}
       if (editNom.trim() && editNom.trim() !== editItem.nom) body.nom = editNom.trim()
       if (editCategorieId && String(editCategorieId) !== String(editItem.categorie_id ?? editItem.categorie?.id ?? '')) {
@@ -260,7 +256,6 @@ const MaterielCrud = () => {
         await axios.put(`${BASE_URL}/materiels/${editItem.id}`, body, { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })
       }
 
-      // 2) diffs par taille -> mouvements
       const desiredByName = new Map()
       rowsEdit.forEach(r => {
         const nom = normalizeSize(r.nom)
@@ -297,7 +292,6 @@ const MaterielCrud = () => {
         }, { headers: { 'Content-Type': 'application/json', Accept: 'application/json' } })
       }
 
-      // 3) ajustement global si nouveau total renseigné
       const desiredTotal = Array.from(desiredByName.values()).reduce((s, n) => s + Number(n || 0), 0)
       const targetTotal = editStockTotalTarget === '' ? desiredTotal : Number(editStockTotalTarget)
       const deltaTotal = targetTotal - desiredTotal
@@ -322,7 +316,6 @@ const MaterielCrud = () => {
   const doDelete = async () => {
     if (!toDelete) return
     try {
-      // ⬇️ Seule modification : on vide le stock (mouvements) du matériel
       await axios.delete(`${BASE_URL}/mouvements/by-materiel/${toDelete.id}`, { headers: { Accept: 'application/json' } })
       setDelOpen(false); setToDelete(null)
       await loadAll()
@@ -339,7 +332,6 @@ const MaterielCrud = () => {
       const res = await axios.get(`${BASE_URL}/stocks/${m.id}/history`, { headers: { Accept: 'application/json' } })
       let rows = Array.isArray(res.data) ? res.data : res.data?.data ?? []
 
-      // rajoute le nom de taille si le backend ne le donne pas
       const needMap = rows.some(r => !r.taille_nom && r.taille_id)
       if (needMap) {
         try {
@@ -358,289 +350,459 @@ const MaterielCrud = () => {
 
   /* ================================= UI ================================ */
   return (
-    <CCard className="shadow-sm">
-      <CCardBody>
-        <h3 className="mb-4">📦 Gestion du Stock des Matériels</h3>
-        {error && <CAlert color="danger" className="mb-3">{error}</CAlert>}
+    <div
+      style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        minHeight: '100vh',
+        padding: '2rem 0',
+      }}
+    >
+      <CContainer>
+        {/* Header global */}
+        <div className="text-center mb-4">
+          <h1
+            className="text-white mb-2"
+            style={{ fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+          >
+            🧰 Gestion du Stock des Matériels
+          </h1>
+          <p className="text-white-50" style={{ fontSize: '1.1rem' }}>
+            Service généraux — Mouvements, suivi des tailles et historique
+          </p>
+        </div>
 
-        {/* -------------------- Formulaire d’ajout -------------------- */}
-        <CForm onSubmit={handleCreate} className="mb-4">
-          <CRow className="g-3">
-            <CCol md={6}>
-              <CFormLabel>Type de matériel</CFormLabel>
-              <CFormSelect value={materielChoisiId} onChange={(e) => setMaterielChoisiId(e.target.value)}>
-                <option value="">-- Sélectionner un matériel --</option>
-                {uniqueMateriels.map(m => (
-                  <option key={m.id} value={m.id}>{m.nom}</option>
+        {/* Carte formulaire */}
+        <CCard className="shadow-lg border-0 mb-4" style={{ borderRadius: 15, overflow: 'hidden' }}>
+          <CCardHeader
+            className="text-white fw-bold py-3"
+            style={{
+              background: 'linear-gradient(45deg, #4a69bd, #718096)',
+              fontSize: '1.2rem',
+              borderBottom: '3px solid #3742fa',
+            }}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center">
+                <span className="me-2" style={{ fontSize: '1.5rem' }}>➕</span>
+                Ajouter un mouvement
+              </div>
+              <CBadge color="light" text="dark" className="px-3 py-2">
+                {materiels.length} matériel{materiels.length > 1 ? 's' : ''}
+              </CBadge>
+            </div>
+          </CCardHeader>
+
+          <CCardBody className="p-4" style={{ backgroundColor: '#f8fafc' }}>
+            {error && (
+              <CAlert
+                color="danger"
+                className="mb-4"
+                style={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 15px rgba(231, 76, 60, 0.2)' }}
+              >
+                {error}
+              </CAlert>
+            )}
+
+            <CForm onSubmit={handleCreate} className="mb-0">
+              <CRow className="g-3">
+                <CCol md={6}>
+                  <CFormLabel className="fw-bold text-muted mb-2">
+                    <span className="me-2">🔧</span>Type de matériel
+                  </CFormLabel>
+                  <CFormSelect
+                    value={materielChoisiId}
+                    onChange={(e) => setMaterielChoisiId(e.target.value)}
+                    style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+                  >
+                    <option value="">-- Sélectionner un matériel --</option>
+                    {uniqueMateriels.map(m => (
+                      <option key={m.id} value={m.id}>{m.nom}</option>
+                    ))}
+                  </CFormSelect>
+                </CCol>
+
+                <CCol md={6}>
+                  <CFormLabel className="fw-bold text-muted mb-2">
+                    <span className="me-2">🧩</span>Catégorie
+                  </CFormLabel>
+                  <CFormSelect
+                    value={categorieId}
+                    onChange={(e) => setCategorieId(e.target.value)}
+                    style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                  </CFormSelect>
+                </CCol>
+
+                {/* lignes tailles */}
+                <CCol xs={12}>
+                  <CFormLabel className="fw-bold text-muted mb-2">Répartition par taille</CFormLabel>
+                  {rows.map((r, i) => {
+                    const options = taillesDuMateriel.filter(t => !(
+                      r.tailleId !== String(t.id) && [...tailleIdsPris].includes(String(t.id))
+                    ))
+                    return (
+                      <CRow key={i} className="g-2 mb-2">
+                        <CCol md={6}>
+                          {taillesDuMateriel.length > 0 ? (
+                            <CFormSelect
+                              value={r.tailleId}
+                              onChange={(e) => {
+                                const id = e.target.value
+                                const nomT = taillesDuMateriel.find(t => String(t.id) === String(id))?.nom || ''
+                                setRow(i, { tailleId: id, nom: nomT })
+                              }}
+                              style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+                            >
+                              <option value="">-- Choisir la taille --</option>
+                              {options.map(t => <option key={t.id} value={String(t.id)}>{t.nom}</option>)}
+                            </CFormSelect>
+                          ) : (
+                            <CFormInput
+                              placeholder="Ex : 40, M, XL…"
+                              value={r.nom}
+                              onChange={(e) => setRow(i, { nom: normalizeSize(e.target.value) })}
+                              style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '12px 16px' }}
+                            />
+                          )}
+                        </CCol>
+                        <CCol md={4}>
+                          <CFormInput
+                            type="number"
+                            min="0"
+                            placeholder="Quantité"
+                            value={r.quantite}
+                            onChange={(e) => setRow(i, { quantite: e.target.value })}
+                            style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '12px 16px' }}
+                          />
+                        </CCol>
+                        <CCol md={2} className="d-grid">
+                          <CButton
+                            type="button"
+                            color="danger"
+                            variant="outline"
+                            onClick={() => rmRow(i)}
+                            disabled={rows.length === 1}
+                            style={{ borderRadius: 8, fontWeight: 600 }}
+                          >
+                            Suppr.
+                          </CButton>
+                        </CCol>
+                      </CRow>
+                    )
+                  })}
+                  <div className="d-flex flex-wrap gap-2 mb-2">
+                    <CButton size="sm" color="secondary" variant="outline" type="button" onClick={addRow} style={{ borderRadius: 8 }}>
+                      + Ajouter une ligne
+                    </CButton>
+                    <CButton size="sm" color="danger" variant="outline" type="button" onClick={clearRows} style={{ borderRadius: 8 }}>
+                      Vider
+                    </CButton>
+                  </div>
+
+                  {taillesDuMateriel.length === 0 && (
+                    <>
+                      <small className="text-body-secondary d-block mb-1">
+                        Ce matériel n’a pas de tailles (ou aucune sélection). Saisis un mouvement global :
+                      </small>
+                      <CRow className="g-2">
+                        <CCol md={6}>
+                          <CFormLabel className="mb-1">Quantité globale</CFormLabel>
+                          <CFormInput
+                            type="number"
+                            min="0"
+                            value={stockGlobal}
+                            onChange={(e) => setStockGlobal(e.target.value)}
+                            style={{ borderRadius: 8, border: '2px solid #e2e8f0' }}
+                          />
+                        </CCol>
+                      </CRow>
+                    </>
+                  )}
+                </CCol>
+
+                {/* Mouvement */}
+                <CCol md={3} sm={6}>
+                  <CFormLabel className="fw-bold text-muted mb-2">Type de mouvement</CFormLabel>
+                  <CFormSelect
+                    value={mvtType}
+                    onChange={(e) => setMvtType(e.target.value)}
+                    style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+                  >
+                    <option>Entrée</option><option>Sortie</option>
+                  </CFormSelect>
+                </CCol>
+                <CCol md={3} sm={6}>
+                  <CFormLabel className="fw-bold text-muted mb-2">Date du mouvement</CFormLabel>
+                  <CFormInput
+                    type="date"
+                    value={mvtDate}
+                    onChange={(e) => setMvtDate(e.target.value)}
+                    style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+                  />
+                </CCol>
+
+                <CCol xs={12}>
+                  <CButton
+                    type="submit"
+                    color="success"
+                    style={{
+                      borderRadius: 8,
+                      padding: '12px 24px',
+                      fontWeight: 600,
+                      background: 'linear-gradient(45deg, #2ed573, #7bed9f)',
+                      border: 'none',
+                      boxShadow: '0 4px 15px rgba(46, 213, 115, 0.3)',
+                    }}
+                  >
+                    Ajouter
+                  </CButton>
+                </CCol>
+              </CRow>
+            </CForm>
+          </CCardBody>
+        </CCard>
+
+        {/* Liste des matériels */}
+        <CCard className="shadow-lg border-0" style={{ borderRadius: 15, overflow: 'hidden' }}>
+          <CCardHeader
+            className="text-white fw-bold py-3"
+            style={{
+              background: 'linear-gradient(45deg, #4a69bd, #718096)',
+              fontSize: '1.2rem',
+              borderBottom: '3px solid #3742fa',
+            }}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center">
+                <span className="me-2" style={{ fontSize: '1.5rem' }}>📋</span>
+                Liste des matériels
+              </div>
+              <CBadge color="light" text="dark" className="px-3 py-2">
+                {loading ? 'Chargement…' : `${materiels.length} élément${materiels.length > 1 ? 's' : ''}`}
+              </CBadge>
+            </div>
+          </CCardHeader>
+
+          <CCardBody className="p-0">
+            {loading ? (
+              <div className="text-center py-5"><CSpinner /> <span className="ms-2">Chargement…</span></div>
+            ) : (
+              <div className="table-responsive">
+                <CTable className="mb-0" hover>
+                  <CTableHead>
+                    <CTableRow style={{ backgroundColor: '#f1f5f9' }}>
+                      <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '26%' }}>Nom</CTableHeaderCell>
+                      <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '12%' }}>Stock total</CTableHeaderCell>
+                      <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '18%' }}>Catégorie</CTableHeaderCell>
+                      <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '18%' }}>Tailles</CTableHeaderCell>
+                      <CTableHeaderCell className="fw-bold text-end py-3" style={{ color: '#475569', width: '8%' }}>Quantités</CTableHeaderCell>
+                      <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '18%' }}>Actions</CTableHeaderCell>
+                    </CTableRow>
+                  </CTableHead>
+                  <CTableBody>
+                    {materiels.length === 0 ? (
+                      <CTableRow>
+                        <CTableDataCell colSpan={6} className="text-center text-body-secondary py-4">Aucun matériel</CTableDataCell>
+                      </CTableRow>
+                    ) : materiels.map((m) => {
+                      const sizeList = (m.tailles || []).slice().sort((a, b) => sortSizes(a.nom, b.nom))
+                      const stockTotal = m.stock_total ?? sizeList.reduce((s, t) => s + (Number(t.quantite) || 0), 0)
+                      return (
+                        <CTableRow key={m.id} className="align-middle">
+                          <CTableDataCell className="text-capitalize fw-semibold">{m.nom}</CTableDataCell>
+                          <CTableDataCell>{stockTotal}</CTableDataCell>
+                          <CTableDataCell>{m.categorie?.nom || categoriesMap[m.categorie_id] || '—'}</CTableDataCell>
+                          <CTableDataCell>
+                            {sizeList.length === 0 ? <span className="text-body-secondary">—</span> : (
+                              <div className="d-flex flex-column gap-1">
+                                {sizeList.map((t) => (
+                                  <CBadge
+                                    key={`${m.id}-${t.nom}`}
+                                    color={isNum(t.nom) ? 'primary' : 'info'}
+                                    className="px-3 py-2 rounded-pill text-white fw-semibold"
+                                  >
+                                    {t.nom}
+                                  </CBadge>
+                                ))}
+                              </div>
+                            )}
+                          </CTableDataCell>
+                          <CTableDataCell className="text-end">
+                            {sizeList.length === 0 ? <span className="text-body-secondary">—</span> : (
+                              <div className="d-flex flex-column gap-2">
+                                {sizeList.map((t) => (
+                                  <div key={`${m.id}-${t.nom}-q`} className="fw-semibold">{Number(t.quantite) || 0}</div>
+                                ))}
+                              </div>
+                            )}
+                          </CTableDataCell>
+                          <CTableDataCell>
+                            <CButton color="info" variant="outline" className="me-2" onClick={() => openHistory(m)} style={{ borderRadius: 6, fontWeight: 600 }}>
+                              Historique
+                            </CButton>
+                            <CButton color="warning" className="me-2" onClick={() => openEdit(m)} style={{ borderRadius: 6, fontWeight: 600 }}>
+                              <CIcon icon={cilPencil} className="me-1" /> Modifier
+                            </CButton>
+                            <CButton color="danger" onClick={() => { setToDelete(m); setDelOpen(true) }} style={{ borderRadius: 6, fontWeight: 600 }}>
+                              <CIcon icon={cilTrash} className="me-1" /> Supprimer
+                            </CButton>
+                          </CTableDataCell>
+                        </CTableRow>
+                      )
+                    })}
+                  </CTableBody>
+                </CTable>
+              </div>
+            )}
+          </CCardBody>
+        </CCard>
+      </CContainer>
+
+      {/* -------- Modale Historique -------- */}
+      <CModal visible={historyOpen} onClose={() => setHistoryOpen(false)} size="lg">
+        <CModalHeader onClose={() => setHistoryOpen(false)}>
+          <CModalTitle>Historique — {historyItem?.nom}</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {historyLoading ? (
+            <div className="text-center py-4"><CSpinner /> Chargement…</div>
+          ) : historyRows.length === 0 ? (
+            <div className="text-body-secondary">Aucun mouvement.</div>
+          ) : (
+            <CTable hover bordered small>
+              <CTableHead color="light">
+                <CTableRow>
+                  <CTableHeaderCell>Date</CTableHeaderCell>
+                  <CTableHeaderCell>Type</CTableHeaderCell>
+                  <CTableHeaderCell>Taille</CTableHeaderCell>
+                  <CTableHeaderCell className="text-end">Quantité</CTableHeaderCell>
+                  <CTableHeaderCell>Motif</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                {historyRows.map((r, i) => (
+                  <CTableRow key={i}>
+                    <CTableDataCell>{r.date_mouvement ?? r.date}</CTableDataCell>
+                    <CTableDataCell>{r.type_mouvement ?? r.type}</CTableDataCell>
+                    <CTableDataCell>{r.taille_nom ?? r.taille?.nom ?? (r.taille_id ?? '—')}</CTableDataCell>
+                    <CTableDataCell className="text-end">{r.quantite}</CTableDataCell>
+                    <CTableDataCell>{r.motif ?? '—'}</CTableDataCell>
+                  </CTableRow>
                 ))}
-              </CFormSelect>
-            </CCol>
+              </CTableBody>
+            </CTable>
+          )}
+        </CModalBody>
+      </CModal>
 
-            <CCol md={6}>
+      {/* -------- Modale Édition -------- */}
+      <CModal visible={editOpen} onClose={() => setEditOpen(false)} size="lg">
+        <CModalHeader onClose={() => setEditOpen(false)}>
+          <CModalTitle>Modifier le matériel</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <CRow className="g-3">
+            <CCol xs={12}>
+              <CFormLabel>Nom</CFormLabel>
+              <CFormInput
+                value={editNom}
+                onChange={(e) => setEditNom(e.target.value)}
+                style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+              />
+            </CCol>
+            <CCol xs={12}>
               <CFormLabel>Catégorie</CFormLabel>
-              <CFormSelect value={categorieId} onChange={(e) => setCategorieId(e.target.value)}>
+              <CFormSelect
+                value={editCategorieId}
+                onChange={(e) => setEditCategorieId(e.target.value)}
+                style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+              >
                 <option value="">-- Sélectionner --</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
               </CFormSelect>
             </CCol>
 
-            {/* lignes tailles */}
-            <CCol xs={12}>
-              <CFormLabel>Répartition par taille</CFormLabel>
-              {rows.map((r, i) => {
-                const options = taillesDuMateriel.filter(t => !(
-                  r.tailleId !== String(t.id) && [...tailleIdsPris].includes(String(t.id))
-                ))
-                return (
-                  <CRow key={i} className="g-2 mb-2">
-                    <CCol md={6}>
-                      {taillesDuMateriel.length > 0 ? (
-                        <CFormSelect
-                          value={r.tailleId}
-                          onChange={(e) => {
-                            const id = e.target.value
-                            const nomT = taillesDuMateriel.find(t => String(t.id) === String(id))?.nom || ''
-                            setRow(i, { tailleId: id, nom: nomT })
-                          }}
-                        >
-                          <option value="">-- Choisir la taille --</option>
-                          {options.map(t => <option key={t.id} value={String(t.id)}>{t.nom}</option>)}
-                        </CFormSelect>
-                      ) : (
-                        <CFormInput placeholder="Ex : 40, M, XL…" value={r.nom}
-                                    onChange={(e) => setRow(i, { nom: normalizeSize(e.target.value) })} />
-                      )}
-                    </CCol>
-                    <CCol md={4}>
-                      <CFormInput type="number" min="0" placeholder="Quantité"
-                                  value={r.quantite} onChange={(e) => setRow(i, { quantite: e.target.value })} />
-                    </CCol>
-                    <CCol md={2} className="d-grid">
-                      <CButton type="button" color="danger" variant="outline"
-                               onClick={() => rmRow(i)} disabled={rows.length === 1}>Suppr.</CButton>
-                    </CCol>
-                  </CRow>
-                )
-              })}
-              <div className="d-flex flex-wrap gap-2 mb-2">
-                <CButton size="sm" color="secondary" variant="outline" type="button" onClick={addRow}>+ Ajouter une ligne</CButton>
-                <CButton size="sm" color="danger" variant="outline" type="button" onClick={clearRows}>Vider</CButton>
+            <CCol md={6}>
+              <CFormLabel>Stock total actuel</CFormLabel>
+              <CFormInput value={editStockTotalCurrent} disabled style={{ borderRadius: 8 }} />
+            </CCol>
+            <CCol md={6}>
+              <CFormLabel>Nouveau stock total (optionnel)</CFormLabel>
+              <CFormInput
+                type="number"
+                min="0"
+                value={editStockTotalTarget}
+                onChange={(e) => setEditStockTotalTarget(e.target.value)}
+                style={{ borderRadius: 8, border: '2px solid #e2e8f0' }}
+              />
+            </CCol>
+
+            <CCol xs={12} className="mt-2">
+              <CFormLabel>Tailles (nom + quantité souhaitée)</CFormLabel>
+              {rowsEdit.map((r, i) => (
+                <CRow key={i} className="g-2 mb-2">
+                  <CCol sm={6}>
+                    <CFormInput
+                      placeholder="Ex : 40, M, XL…"
+                      value={r.nom}
+                      onChange={(e) => setRowEdit(i, { nom: normalizeSize(e.target.value) })}
+                      style={{ borderRadius: 8, border: '2px solid #e2e8f0' }}
+                    />
+                  </CCol>
+                  <CCol sm={4}>
+                    <CFormInput
+                      type="number"
+                      min="0"
+                      placeholder="Quantité"
+                      value={r.quantite}
+                      onChange={(e) => setRowEdit(i, { quantite: e.target.value })}
+                      style={{ borderRadius: 8, border: '2px solid #e2e8f0' }}
+                    />
+                  </CCol>
+                  <CCol sm={2} className="d-grid">
+                    <CButton type="button" color="danger" variant="outline" onClick={() => rmRowEdit(i)} disabled={rowsEdit.length === 1} style={{ borderRadius: 8 }}>
+                      Suppr.
+                    </CButton>
+                  </CCol>
+                </CRow>
+              ))}
+              <div className="d-flex flex-wrap gap-2">
+                <CButton size="sm" color="secondary" variant="outline" type="button" onClick={addRowEdit} style={{ borderRadius: 8 }}>
+                  + Ajouter une ligne
+                </CButton>
               </div>
-              {taillesDuMateriel.length === 0 && (
-                <>
-                  <small className="text-body-secondary d-block mb-1">
-                    Ce matériel n’a pas de tailles (ou aucune sélection). Saisis un mouvement global :
-                  </small>
-                  <CRow className="g-2">
-                    <CCol md={6}>
-                      <CFormLabel className="mb-1">Quantité globale</CFormLabel>
-                      <CFormInput type="number" min="0" value={stockGlobal}
-                                  onChange={(e) => setStockGlobal(e.target.value)} />
-                    </CCol>
-                  </CRow>
-                </>
-              )}
-            </CCol>
-
-            {/* Mouvement */}
-            <CCol md={3} sm={6}>
-              <CFormLabel>Type de mouvement</CFormLabel>
-              <CFormSelect value={mvtType} onChange={(e) => setMvtType(e.target.value)}>
-                <option>Entrée</option><option>Sortie</option>
-              </CFormSelect>
-            </CCol>
-            <CCol md={3} sm={6}>
-              <CFormLabel>Date du mouvement</CFormLabel>
-              <CFormInput type="date" value={mvtDate} onChange={(e) => setMvtDate(e.target.value)} />
-            </CCol>
-
-            <CCol xs={12}>
-              <CButton type="submit" color="success">Ajouter</CButton>
             </CCol>
           </CRow>
-        </CForm>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" variant="outline" onClick={() => setEditOpen(false)} disabled={saving} style={{ borderRadius: 8 }}>
+            Annuler
+          </CButton>
+          <CButton color="warning" onClick={handleUpdate} disabled={saving} style={{ borderRadius: 8, fontWeight: 600 }}>
+            <CIcon icon={cilPencil} className="me-1" />
+            {saving ? 'Enregistrement…' : 'Enregistrer'}
+          </CButton>
+        </CModalFooter>
+      </CModal>
 
-        <hr className="mb-3" />
-        <h5 className="mb-3">🧾 Liste des matériels</h5>
-
-        {loading ? (
-          <div className="text-center py-5"><CSpinner /> Chargement…</div>
-        ) : (
-          <CTable hover bordered>
-            <CTableHead color="light">
-              <CTableRow>
-                <CTableHeaderCell style={{ width: '26%' }}>Nom</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '12%' }}>Stock total</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '18%' }}>Catégorie</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '18%' }}>Tailles</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '8%' }} className="text-end">Quantités</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '18%' }}>Actions</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              {materiels.length === 0 ? (
-                <CTableRow>
-                  <CTableDataCell colSpan={6} className="text-center text-body-secondary">Aucun matériel</CTableDataCell>
-                </CTableRow>
-              ) : materiels.map((m) => {
-                const sizeList = (m.tailles || []).slice().sort((a, b) => sortSizes(a.nom, b.nom))
-                const stockTotal = m.stock_total ?? sizeList.reduce((s, t) => s + (Number(t.quantite) || 0), 0)
-                return (
-                  <CTableRow key={m.id}>
-                    <CTableDataCell className="text-capitalize">{m.nom}</CTableDataCell>
-                    <CTableDataCell>{stockTotal}</CTableDataCell>
-                    <CTableDataCell>{m.categorie?.nom || categoriesMap[m.categorie_id] || '—'}</CTableDataCell>
-                    <CTableDataCell>
-                      {sizeList.length === 0 ? <span className="text-body-secondary">—</span> : (
-                        <div className="d-flex flex-column gap-1">
-                          {sizeList.map((t) => (
-                            <CBadge key={`${m.id}-${t.nom}`} color={isNum(t.nom) ? 'primary' : 'info'}
-                                    className="px-3 py-2 rounded-pill text-white fw-semibold">
-                              {t.nom}
-                            </CBadge>
-                          ))}
-                        </div>
-                      )}
-                    </CTableDataCell>
-                    <CTableDataCell className="text-end">
-                      {sizeList.length === 0 ? <span className="text-body-secondary">—</span> : (
-                        <div className="d-flex flex-column gap-2">
-                          {sizeList.map((t) => (
-                            <div key={`${m.id}-${t.nom}-q`} className="fw-semibold">{Number(t.quantite) || 0}</div>
-                          ))}
-                        </div>
-                      )}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      <CButton color="info" variant="outline" className="me-2" onClick={() => openHistory(m)}>Historique</CButton>
-                      <CButton color="warning" className="me-2" onClick={() => openEdit(m)}>
-                        <CIcon icon={cilPencil} className="me-1" /> Modifier
-                      </CButton>
-                      <CButton color="danger" onClick={() => { setToDelete(m); setDelOpen(true) }}>
-                        <CIcon icon={cilTrash} className="me-1" /> Supprimer
-                      </CButton>
-                    </CTableDataCell>
-                  </CTableRow>
-                )
-              })}
-            </CTableBody>
-          </CTable>
-        )}
-
-        {/* -------- Modale Historique -------- */}
-        <CModal visible={historyOpen} onClose={() => setHistoryOpen(false)} size="lg">
-          <CModalHeader onClose={() => setHistoryOpen(false)}>
-            <CModalTitle>Historique — {historyItem?.nom}</CModalTitle>
-          </CModalHeader>
-          <CModalBody>
-            {historyLoading ? (
-              <div className="text-center py-4"><CSpinner /> Chargement…</div>
-            ) : historyRows.length === 0 ? (
-              <div className="text-body-secondary">Aucun mouvement.</div>
-            ) : (
-              <CTable hover bordered small>
-                <CTableHead color="light">
-                  <CTableRow>
-                    <CTableHeaderCell>Date</CTableHeaderCell>
-                    <CTableHeaderCell>Type</CTableHeaderCell>
-                    <CTableHeaderCell>Taille</CTableHeaderCell>
-                    <CTableHeaderCell className="text-end">Quantité</CTableHeaderCell>
-                    <CTableHeaderCell>Motif</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {historyRows.map((r, i) => (
-                    <CTableRow key={i}>
-                      <CTableDataCell>{r.date_mouvement ?? r.date}</CTableDataCell>
-                      <CTableDataCell>{r.type_mouvement ?? r.type}</CTableDataCell>
-                      <CTableDataCell>{r.taille_nom ?? r.taille?.nom ?? (r.taille_id ?? '—')}</CTableDataCell>
-                      <CTableDataCell className="text-end">{r.quantite}</CTableDataCell>
-                      <CTableDataCell>{r.motif ?? '—'}</CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
-            )}
-          </CModalBody>
-        </CModal>
-
-        {/* -------- Modale Édition -------- */}
-        <CModal visible={editOpen} onClose={() => setEditOpen(false)} size="lg">
-          <CModalHeader onClose={() => setEditOpen(false)}>
-            <CModalTitle>Modifier le matériel</CModalTitle>
-          </CModalHeader>
-          <CModalBody>
-            <CRow className="g-3">
-              <CCol xs={12}>
-                <CFormLabel>Nom</CFormLabel>
-                <CFormInput value={editNom} onChange={(e) => setEditNom(e.target.value)} />
-              </CCol>
-              <CCol xs={12}>
-                <CFormLabel>Catégorie</CFormLabel>
-                <CFormSelect value={editCategorieId} onChange={(e) => setEditCategorieId(e.target.value)}>
-                  <option value="">-- Sélectionner --</option>
-                  {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
-                </CFormSelect>
-              </CCol>
-
-              <CCol md={6}>
-                <CFormLabel>Stock total actuel</CFormLabel>
-                <CFormInput value={editStockTotalCurrent} disabled />
-              </CCol>
-              <CCol md={6}>
-                <CFormLabel>Nouveau stock total (optionnel)</CFormLabel>
-                <CFormInput type="number" min="0" value={editStockTotalTarget}
-                            onChange={(e) => setEditStockTotalTarget(e.target.value)} />
-              </CCol>
-
-              <CCol xs={12} className="mt-2">
-                <CFormLabel>Tailles (nom + quantité souhaitée)</CFormLabel>
-                {rowsEdit.map((r, i) => (
-                  <CRow key={i} className="g-2 mb-2">
-                    <CCol sm={6}>
-                      <CFormInput placeholder="Ex : 40, M, XL…" value={r.nom}
-                                  onChange={(e) => setRowEdit(i, { nom: normalizeSize(e.target.value) })} />
-                    </CCol>
-                    <CCol sm={4}>
-                      <CFormInput type="number" min="0" placeholder="Quantité" value={r.quantite}
-                                  onChange={(e) => setRowEdit(i, { quantite: e.target.value })} />
-                    </CCol>
-                    <CCol sm={2} className="d-grid">
-                      <CButton type="button" color="danger" variant="outline"
-                               onClick={() => rmRowEdit(i)} disabled={rowsEdit.length === 1}>Suppr.</CButton>
-                    </CCol>
-                  </CRow>
-                ))}
-                <div className="d-flex flex-wrap gap-2">
-                  <CButton size="sm" color="secondary" variant="outline" type="button" onClick={addRowEdit}>
-                    + Ajouter une ligne
-                  </CButton>
-                </div>
-              </CCol>
-            </CRow>
-          </CModalBody>
-          <CModalFooter>
-            <CButton color="secondary" variant="outline" onClick={() => setEditOpen(false)} disabled={saving}>Annuler</CButton>
-            <CButton color="warning" onClick={handleUpdate} disabled={saving}>
-              <CIcon icon={cilPencil} className="me-1" />
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </CButton>
-          </CModalFooter>
-        </CModal>
-
-        {/* -------- Modale Suppression -------- */}
-        <CModal visible={delOpen} onClose={() => setDelOpen(false)}>
-          <CModalHeader onClose={() => setDelOpen(false)}>
-            <CModalTitle>Supprimer</CModalTitle>
-          </CModalHeader>
-          <CModalBody>Supprimer le matériel <strong>{toDelete?.nom}</strong> ?</CModalBody>
-          <CModalFooter>
-            <CButton color="secondary" variant="outline" onClick={() => setDelOpen(false)}>Annuler</CButton>
-            <CButton color="danger" onClick={doDelete}><CIcon icon={cilTrash} className="me-1" /> Supprimer</CButton>
-          </CModalFooter>
-        </CModal>
-      </CCardBody>
-    </CCard>
+      {/* -------- Modale Suppression -------- */}
+      <CModal visible={delOpen} onClose={() => setDelOpen(false)}>
+        <CModalHeader onClose={() => setDelOpen(false)}>
+          <CModalTitle>Supprimer</CModalTitle>
+        </CModalHeader>
+        <CModalBody>Supprimer le matériel <strong>{toDelete?.nom}</strong> ?</CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" variant="outline" onClick={() => setDelOpen(false)} style={{ borderRadius: 8 }}>
+            Annuler
+          </CButton>
+          <CButton color="danger" onClick={doDelete} style={{ borderRadius: 8, fontWeight: 600 }}>
+            <CIcon icon={cilTrash} className="me-1" /> Supprimer
+          </CButton>
+        </CModalFooter>
+      </CModal>
+    </div>
   )
 }
 

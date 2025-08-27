@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import {
   CCard, CCardHeader, CCardBody,
-  CRow, CCol,
+  CRow, CCol, CContainer,
   CForm, CFormLabel, CFormInput, CFormSelect,
   CButton, CTable, CTableHead, CTableRow, CTableHeaderCell,
-  CTableBody, CTableDataCell, CAlert, CBadge,
+  CTableBody, CTableDataCell, CAlert, CBadge, CSpinner,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilPlus, cilTrash } from '@coreui/icons'
@@ -146,152 +146,258 @@ const Materiel = () => {
   }
 
   return (
-    <CRow>
-      <CCol xs={12}>
-        <CCard className="mb-4">
-          <CCardHeader>
-            <strong>Gestion de matériel</strong>
-            <CBadge color="info" className="ms-2">Créer matériel + tailles</CBadge>
-          </CCardHeader>
-          <CCardBody>
-            {msg.text && <CAlert color={msg.type} className="mb-3">{msg.text}</CAlert>}
+    <div
+      style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        minHeight: '100vh',
+        padding: '2rem 0',
+      }}
+    >
+      <CContainer>
+        {/* Header global */}
+        <div className="text-center mb-4">
+          <h1
+            className="text-white mb-2"
+            style={{ fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+          >
+            🧱 Gestion du matériel
+          </h1>
+          <p className="text-white-50" style={{ fontSize: '1.1rem' }}>
+            Service généraux — Création de matériel et de tailles
+          </p>
+        </div>
 
-            <CForm onSubmit={handleSubmit}>
-              <CRow className="mb-3">
-                <CCol md={6}>
-                  <CFormLabel>Nom du matériel *</CFormLabel>
-                  <CFormInput
-                    value={nom}
-                    onChange={(e) => setNom(e.target.value)}
-                    placeholder="Ex: Chaussure de sécurité"
-                  />
-                </CCol>
-                <CCol md={6}>
-                  <CFormLabel>Catégorie (optionnelle)</CFormLabel>
-                  <CFormSelect
-                    value={categorieId}
-                    onChange={(e) => setCategorieId(e.target.value)}
-                  >
-                    <option value="">-- Aucune --</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.nom}</option>
-                    ))}
-                  </CFormSelect>
-                </CCol>
-              </CRow>
-
-              <div className="mb-2 d-flex align-items-center justify-content-between">
-                <strong>Tailles</strong>
-                <CButton type="button" color="primary" variant="outline" size="sm" onClick={addRow}>
-                  <CIcon icon={cilPlus} className="me-1" /> Ajouter une ligne
-                </CButton>
+        {/* Carte formulaire */}
+        <CCard className="shadow-lg border-0" style={{ borderRadius: 15, overflow: 'hidden' }}>
+          <CCardHeader
+            className="text-white fw-bold py-3"
+            style={{
+              background: 'linear-gradient(45deg, #4a69bd, #718096)',
+              fontSize: '1.2rem',
+              borderBottom: '3px solid #3742fa',
+            }}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center">
+                <span className="me-2" style={{ fontSize: '1.5rem' }}>🛠️</span>
+                Créer un matériel & ses tailles
               </div>
+              <CBadge color="light" text="dark" className="px-3 py-2">Formulaire</CBadge>
+            </div>
+          </CCardHeader>
 
-              <CTable striped bordered small>
+          <CCardBody className="p-4" style={{ backgroundColor: '#f8fafc' }}>
+            {msg.text && (
+              <CAlert
+                color={msg.type}
+                className="mb-4"
+                style={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}
+              >
+                {msg.text}
+              </CAlert>
+            )}
+
+            <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: 10 }}>
+              <CCardBody className="bg-white">
+                <CForm onSubmit={handleSubmit} className="mb-0">
+                  <CRow className="mb-3">
+                    <CCol md={6}>
+                      <CFormLabel className="fw-bold text-muted mb-2">
+                        <span className="me-2">🏷️</span>Nom du matériel *
+                      </CFormLabel>
+                      <CFormInput
+                        value={nom}
+                        onChange={(e) => setNom(e.target.value)}
+                        placeholder="Ex: Chaussure de sécurité"
+                        style={{
+                          borderRadius: 8,
+                          border: '2px solid #e2e8f0',
+                          padding: '12px 16px',
+                          fontSize: '1rem',
+                        }}
+                        className="form-control-lg"
+                      />
+                    </CCol>
+                    <CCol md={6}>
+                      <CFormLabel className="fw-bold text-muted mb-2">
+                        <span className="me-2">🧩</span>Catégorie (optionnelle)
+                      </CFormLabel>
+                      <CFormSelect
+                        value={categorieId}
+                        onChange={(e) => setCategorieId(e.target.value)}
+                        style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+                      >
+                        <option value="">-- Aucune --</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>{c.nom}</option>
+                        ))}
+                      </CFormSelect>
+                    </CCol>
+                  </CRow>
+
+                  <div className="mb-2 d-flex align-items-center justify-content-between">
+                    <strong>Tailles</strong>
+                    <CButton
+                      type="button"
+                      color="primary"
+                      variant="outline"
+                      size="sm"
+                      onClick={addRow}
+                      style={{ borderRadius: 8 }}
+                    >
+                      <CIcon icon={cilPlus} className="me-1" /> Ajouter une ligne
+                    </CButton>
+                  </div>
+
+                  <div className="table-responsive">
+                    <CTable className="mb-0" hover>
+                      <CTableHead>
+                        <CTableRow style={{ backgroundColor: '#f1f5f9' }}>
+                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '50%' }}>
+                            Nom de la taille *
+                          </CTableHeaderCell>
+                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '35%' }}>
+                            Quantité initiale (optionnelle)
+                          </CTableHeaderCell>
+                          <CTableHeaderCell className="fw-bold text-center py-3" style={{ color: '#475569', width: '15%' }}>
+                            Actions
+                          </CTableHeaderCell>
+                        </CTableRow>
+                      </CTableHead>
+                      <CTableBody>
+                        {tailles.map((t, idx) => (
+                          <CTableRow key={idx} className="align-middle">
+                            <CTableDataCell>
+                              <CFormInput
+                                value={t.nom}
+                                onChange={(e) => setRow(idx, { nom: e.target.value })}
+                                placeholder="Ex: S, M, L, 38, 39..."
+                                style={{ borderRadius: 8, border: '2px solid #e2e8f0' }}
+                              />
+                            </CTableDataCell>
+                            <CTableDataCell>
+                              <CFormInput
+                                type="number"
+                                min="0"
+                                value={t.quantite}
+                                onChange={(e) => setRow(idx, { quantite: e.target.value })}
+                                placeholder="0"
+                                style={{ borderRadius: 8, border: '2px solid #e2e8f0' }}
+                              />
+                            </CTableDataCell>
+                            <CTableDataCell className="text-center">
+                              <CButton
+                                type="button"
+                                color="danger"
+                                variant="outline"
+                                size="sm"
+                                disabled={tailles.length === 1}
+                                onClick={() => delRow(idx)}
+                                title="Supprimer la ligne"
+                                style={{ borderRadius: 6, fontWeight: 600 }}
+                              >
+                                <CIcon icon={cilTrash} />
+                              </CButton>
+                            </CTableDataCell>
+                          </CTableRow>
+                        ))}
+                      </CTableBody>
+                    </CTable>
+                  </div>
+
+                  <div className="mt-4">
+                    <CButton
+                      type="submit"
+                      color="success"
+                      disabled={loading}
+                      style={{
+                        borderRadius: 8,
+                        padding: '12px 24px',
+                        fontWeight: 600,
+                        background: 'linear-gradient(45deg, #2ed573, #7bed9f)',
+                        border: 'none',
+                        boxShadow: '0 4px 15px rgba(46, 213, 115, 0.3)',
+                      }}
+                    >
+                      {loading ? <><CSpinner size="sm" className="me-2" />Enregistrement...</> : 'Enregistrer'}
+                    </CButton>
+                  </div>
+                </CForm>
+              </CCardBody>
+            </CCard>
+          </CCardBody>
+        </CCard>
+
+        {/* Liste + suppression */}
+        <CCard className="shadow-lg border-0" style={{ borderRadius: 15, overflow: 'hidden' }}>
+          <CCardHeader
+            className="text-white fw-bold py-3"
+            style={{
+              background: 'linear-gradient(45deg, #4a69bd, #718096)',
+              fontSize: '1.2rem',
+              borderBottom: '3px solid #3742fa',
+            }}
+          >
+            <div className="d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center">
+                <span className="me-2" style={{ fontSize: '1.5rem' }}>📦</span>
+                Liste des matériels
+              </div>
+              <CBadge color="light" text="dark" className="px-3 py-2">
+                {loadingList ? 'Chargement...' : `${materiels.length} élément${materiels.length > 1 ? 's' : ''}`}
+              </CBadge>
+            </div>
+          </CCardHeader>
+
+          <CCardBody className="p-0">
+            <div className="table-responsive">
+              <CTable className="mb-0" hover>
                 <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell style={{ width: '50%' }}>Nom de la taille *</CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '35%' }}>Quantité initiale (optionnelle)</CTableHeaderCell>
-                    <CTableHeaderCell style={{ width: '15%' }}>Actions</CTableHeaderCell>
+                  <CTableRow style={{ backgroundColor: '#f1f5f9' }}>
+                    <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569' }}>Matériel</CTableHeaderCell>
+                    <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569' }}>Nb tailles</CTableHeaderCell>
+                    <CTableHeaderCell className="fw-bold text-center py-3" style={{ color: '#475569' }}>Actions</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
-                  {tailles.map((t, idx) => (
-                    <CTableRow key={idx}>
+                  {materiels.map((m) => (
+                    <CTableRow key={m.id} className="align-middle">
+                      <CTableDataCell className="fw-semibold">{m.nom}</CTableDataCell>
                       <CTableDataCell>
-                        <CFormInput
-                          value={t.nom}
-                          onChange={(e) => setRow(idx, { nom: e.target.value })}
-                          placeholder="Ex: S, M, L, 38, 39..."
-                        />
-                      </CTableDataCell>
-                      <CTableDataCell>
-                        <CFormInput
-                          type="number"
-                          min="0"
-                          value={t.quantite}
-                          onChange={(e) => setRow(idx, { quantite: e.target.value })}
-                          placeholder="0"
-                        />
+                        <CBadge color="primary" className="px-3 py-2">
+                          {Array.isArray(m.tailles) ? m.tailles.length : 0}
+                        </CBadge>
                       </CTableDataCell>
                       <CTableDataCell className="text-center">
                         <CButton
-                          type="button"
                           color="danger"
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          disabled={tailles.length === 1}
-                          onClick={() => delRow(idx)}
-                          title="Supprimer la ligne"
+                          disabled={deletingId === m.id}
+                          onClick={() => handleDelete(m.id, m.nom)}
+                          title={`Supprimer ${m.nom}`}
+                          style={{ borderRadius: 6, fontWeight: 600 }}
                         >
-                          <CIcon icon={cilTrash} />
+                          <CIcon icon={cilTrash} className="me-1" />
+                          Supprimer
                         </CButton>
                       </CTableDataCell>
                     </CTableRow>
                   ))}
+                  {materiels.length === 0 && !loadingList && (
+                    <CTableRow>
+                      <CTableDataCell colSpan={3} className="text-center text-muted py-4">
+                        Aucun matériel
+                      </CTableDataCell>
+                    </CTableRow>
+                  )}
                 </CTableBody>
               </CTable>
-
-              <div className="mt-3">
-                <CButton type="submit" color="success" disabled={loading}>
-                  {loading ? 'Enregistrement...' : 'Enregistrer'}
-                </CButton>
-              </div>
-            </CForm>
+            </div>
           </CCardBody>
         </CCard>
-      </CCol>
-
-      {/* Liste + suppression */}
-      <CCol xs={12}>
-        <CCard>
-          <CCardHeader>
-            <strong>Liste des matériels</strong>
-            <CBadge color="secondary" className="ms-2">
-              {loadingList ? 'Chargement...' : `${materiels.length}`}
-            </CBadge>
-          </CCardHeader>
-          <CCardBody>
-            <CTable striped bordered small>
-              <CTableHead>
-                <CTableRow>
-                  <CTableHeaderCell>Matériel</CTableHeaderCell>
-                  <CTableHeaderCell>Nb tailles</CTableHeaderCell>
-                  <CTableHeaderCell className="text-center">Actions</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-              <CTableBody>
-                {materiels.map((m) => (
-                  <CTableRow key={m.id}>
-                    <CTableDataCell>{m.nom}</CTableDataCell>
-                    <CTableDataCell>{Array.isArray(m.tailles) ? m.tailles.length : 0}</CTableDataCell>
-                    <CTableDataCell className="text-center">
-                      <CButton
-                        color="danger"
-                        variant="ghost"
-                        size="sm"
-                        disabled={deletingId === m.id}
-                        onClick={() => handleDelete(m.id, m.nom)}
-                        title={`Supprimer ${m.nom}`}
-                      >
-                        <CIcon icon={cilTrash} />
-                      </CButton>
-                    </CTableDataCell>
-                  </CTableRow>
-                ))}
-                {materiels.length === 0 && !loadingList && (
-                  <CTableRow>
-                    <CTableDataCell colSpan={3} className="text-center">
-                      Aucun matériel
-                    </CTableDataCell>
-                  </CTableRow>
-                )}
-              </CTableBody>
-            </CTable>
-          </CCardBody>
-        </CCard>
-      </CCol>
-    </CRow>
+      </CContainer>
+    </div>
   )
 }
 

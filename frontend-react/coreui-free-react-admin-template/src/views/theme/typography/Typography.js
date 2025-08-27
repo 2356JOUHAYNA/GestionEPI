@@ -1,7 +1,8 @@
+// src/views/theme/Taille/TailleCrud.js
 import React, { useEffect, useMemo, useState } from 'react'
 import {
-  CCard, CCardBody,
-  CRow, CCol,
+  CCard, CCardBody, CCardHeader,
+  CRow, CCol, CContainer,
   CForm, CFormLabel, CFormInput, CFormSelect, CButton,
   CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell,
   CAlert, CSpinner,
@@ -183,120 +184,249 @@ const TailleCrud = () => {
 
   /* -------------------------------- UI --------------------------------- */
   return (
-    <CCard className="shadow-sm">
-      <CCardBody>
-        <h3 className="mb-4">📏 Gestion des Tailles</h3>
-        {error && <CAlert color="danger" className="mb-3">{error}</CAlert>}
+    <div
+      style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        minHeight: '100vh',
+        padding: '2rem 0',
+      }}
+    >
+      <CContainer>
+        {/* Header global */}
+        <div className="text-center mb-4">
+          <h1
+            className="text-white mb-2"
+            style={{ fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+          >
+            📏 Gestion des Tailles
+          </h1>
+          <p className="text-white-50" style={{ fontSize: '1.1rem' }}>
+            Service généraux — Création, édition et suppression des tailles par matériel
+          </p>
+        </div>
 
-        {/* Choix du matériel */}
-        <CRow className="g-3 mb-1">
-          <CCol md={6}>
-            <CFormLabel>Matériel</CFormLabel>
-            <CFormSelect value={materielId} onChange={(e) => setMaterielId(e.target.value)}>
-              <option value="">-- Sélectionner un matériel --</option>
-              {uniqueMateriels.map(m => (
-                <option key={m.id} value={m.id}>{m.nom}</option>
-              ))}
-            </CFormSelect>
-          </CCol>
-          <CCol md={6}>
-            <CFormLabel>Recherche</CFormLabel>
-            <CFormInput placeholder="Filtrer les tailles" value={q} onChange={(e) => setQ(e.target.value)} />
-          </CCol>
-        </CRow>
+        {/* Carte principale */}
+        <CCard className="shadow-lg border-0" style={{ borderRadius: 15, overflow: 'hidden' }}>
+          <CCardHeader
+            className="text-white fw-bold py-3"
+            style={{
+              background: 'linear-gradient(45deg, #4a69bd, #718096)',
+              fontSize: '1.2rem',
+              borderBottom: '3px solid #3742fa',
+            }}
+          >
+            <div className="d-flex align-items-center">
+              <span className="me-2" style={{ fontSize: '1.5rem' }}>🧰</span>
+              Gestion & Enregistrement
+            </div>
+          </CCardHeader>
 
-        {/* Formulaire création */}
-        <CForm onSubmit={handleCreate} className="mb-4">
-          <CRow className="g-2 align-items-end">
+          <CCardBody className="p-4" style={{ backgroundColor: '#f8fafc' }}>
+            {error && (
+              <CAlert
+                color="danger"
+                className="mb-4"
+                style={{ borderRadius: 10, border: 'none', boxShadow: '0 4px 15px rgba(231, 76, 60, 0.2)' }}
+              >
+                {error}
+              </CAlert>
+            )}
+
+            {/* Choix du matériel + recherche */}
+            <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: 10 }}>
+              <CCardBody className="bg-white">
+                <CRow className="g-3 mb-0">
+                  <CCol md={6}>
+                    <CFormLabel className="fw-bold text-muted mb-2">
+                      <span className="me-2">🔧</span>Matériel
+                    </CFormLabel>
+                    <CFormSelect
+                      value={materielId}
+                      onChange={(e) => setMaterielId(e.target.value)}
+                      style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
+                    >
+                      <option value="">-- Sélectionner un matériel --</option>
+                      {uniqueMateriels.map(m => (
+                        <option key={m.id} value={m.id}>{m.nom}</option>
+                      ))}
+                    </CFormSelect>
+                  </CCol>
+                  <CCol md={6}>
+                    <CFormLabel className="fw-bold text-muted mb-2">
+                      <span className="me-2">🔎</span>Recherche
+                    </CFormLabel>
+                    <CFormInput
+                      placeholder="Filtrer les tailles"
+                      value={q}
+                      onChange={(e) => setQ(e.target.value)}
+                      style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '12px 16px', fontSize: '1rem' }}
+                      className="form-control-lg"
+                    />
+                  </CCol>
+                </CRow>
+              </CCardBody>
+            </CCard>
+
+            {/* Formulaire création */}
+            <CCard className="mb-4 border-0 shadow-sm" style={{ borderRadius: 10 }}>
+              <CCardBody className="bg-white">
+                <CForm onSubmit={handleCreate} className="mb-0">
+                  <CRow className="g-3 align-items-end">
+                    <CCol md={6}>
+                      <CFormLabel className="fw-bold text-muted mb-2">
+                        <span className="me-2">🏷️</span>Nom de la taille
+                      </CFormLabel>
+                      <CFormInput
+                        placeholder="Ex : 38, M, XL…"
+                        value={newNom}
+                        onChange={(e) => setNewNom(e.target.value)}
+                        style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '12px 16px', fontSize: '1rem' }}
+                        className="form-control-lg"
+                      />
+                    </CCol>
+                    <CCol md={4}>
+                      <CFormLabel className="fw-bold text-muted mb-2">
+                        <span className="me-2">📦</span>Quantité
+                      </CFormLabel>
+                      <CFormInput
+                        type="number"
+                        min="0"
+                        placeholder="Quantité"
+                        value={newQte}
+                        onChange={(e) => setNewQte(e.target.value)}
+                        style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '12px 16px', fontSize: '1rem' }}
+                        className="form-control-lg"
+                      />
+                    </CCol>
+                    <CCol md={2} className="d-grid">
+                      <CButton
+                        type="submit"
+                        color="success"
+                        disabled={!materielId}
+                        style={{
+                          borderRadius: 8,
+                          padding: '12px 24px',
+                          fontWeight: 600,
+                          background: 'linear-gradient(45deg, #2ed573, #7bed9f)',
+                          border: 'none',
+                          boxShadow: '0 4px 15px rgba(46, 213, 115, 0.3)',
+                        }}
+                      >
+                        Ajouter
+                      </CButton>
+                    </CCol>
+                  </CRow>
+                </CForm>
+              </CCardBody>
+            </CCard>
+
+            {/* Liste */}
+            <CCard className="border-0 shadow-sm" style={{ borderRadius: 10 }}>
+              <CCardHeader className="bg-light border-0" style={{ borderRadius: '10px 10px 0 0' }}>
+                <h5 className="mb-0 fw-bold text-dark">📋 Tailles du matériel sélectionné</h5>
+              </CCardHeader>
+              <CCardBody className="p-0">
+                {loading ? (
+                  <div className="text-center py-5">
+                    <CSpinner /> <span className="ms-2">Chargement…</span>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <CTable className="mb-0" hover>
+                      <CTableHead>
+                        <CTableRow style={{ backgroundColor: '#f1f5f9' }}>
+                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '40%' }}>
+                            Taille
+                          </CTableHeaderCell>
+                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '20%' }}>
+                            Quantité
+                          </CTableHeaderCell>
+                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '20%' }}>
+                            Créée le
+                          </CTableHeaderCell>
+                          <CTableHeaderCell className="fw-bold text-center py-3" style={{ color: '#475569', width: '20%' }}>
+                            Actions
+                          </CTableHeaderCell>
+                        </CTableRow>
+                      </CTableHead>
+                      <CTableBody>
+                        {(!taillesFiltrees || taillesFiltrees.length === 0) ? (
+                          <CTableRow>
+                            <CTableDataCell colSpan={4} className="text-center text-body-secondary py-4">
+                              Aucune taille pour ce matériel.
+                            </CTableDataCell>
+                          </CTableRow>
+                        ) : taillesFiltrees.map(t => (
+                          <CTableRow key={t.id} className="align-middle">
+                            <CTableDataCell className="text-uppercase fw-semibold">{t.nom}</CTableDataCell>
+                            <CTableDataCell>{t.quantite ?? 0}</CTableDataCell>
+                            <CTableDataCell>{t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}</CTableDataCell>
+                            <CTableDataCell className="text-center">
+                              <CButton
+                                color="warning"
+                                className="me-2"
+                                onClick={() => openEdit(t)}
+                                style={{ borderRadius: 6, fontWeight: 600 }}
+                              >
+                                <CIcon icon={cilPencil} className="me-1" /> Modifier
+                              </CButton>
+                              <CButton
+                                color="danger"
+                                onClick={() => handleDelete(t)}
+                                style={{ borderRadius: 6, fontWeight: 600 }}
+                              >
+                                <CIcon icon={cilTrash} className="me-1" /> Supprimer
+                              </CButton>
+                            </CTableDataCell>
+                          </CTableRow>
+                        ))}
+                      </CTableBody>
+                    </CTable>
+                  </div>
+                )}
+              </CCardBody>
+            </CCard>
+          </CCardBody>
+        </CCard>
+      </CContainer>
+
+      {/* Modale édition */}
+      <CModal visible={editOpen} onClose={() => setEditOpen(false)}>
+        <CModalHeader onClose={() => setEditOpen(false)}>
+          <CModalTitle>Modifier la taille</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <CRow className="g-3">
             <CCol md={6}>
-              <CFormLabel>Nom de la taille</CFormLabel>
+              <CFormLabel>Nom</CFormLabel>
               <CFormInput
-                placeholder="Ex : 38, M, XL…"
-                value={newNom}
-                onChange={(e) => setNewNom(e.target.value)}
+                value={editNom}
+                onChange={(e) => setEditNom(e.target.value)}
+                style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
               />
             </CCol>
-            <CCol md={4}>
+            <CCol md={6}>
               <CFormLabel>Quantité</CFormLabel>
               <CFormInput
                 type="number"
                 min="0"
-                placeholder="Quantité"
-                value={newQte}
-                onChange={(e) => setNewQte(e.target.value)}
+                value={editQte}
+                onChange={(e) => setEditQte(e.target.value)}
+                style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '10px 12px' }}
               />
             </CCol>
-            <CCol md={2} className="d-grid">
-              <CButton type="submit" color="success" disabled={!materielId}>Ajouter</CButton>
-            </CCol>
           </CRow>
-        </CForm>
-
-        {/* Liste */}
-        {loading ? (
-          <div className="text-center py-5"><CSpinner /> Chargement…</div>
-        ) : (
-          <CTable hover bordered>
-            <CTableHead color="light">
-              <CTableRow>
-                <CTableHeaderCell style={{ width: '40%' }}>Taille</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '20%' }}>Quantité</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '20%' }}>Créée le</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '20%' }}>Actions</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              {(!taillesFiltrees || taillesFiltrees.length === 0) ? (
-                <CTableRow>
-                  <CTableDataCell colSpan={4} className="text-center text-body-secondary">
-                    Aucune taille pour ce matériel.
-                  </CTableDataCell>
-                </CTableRow>
-              ) : taillesFiltrees.map(t => (
-                <CTableRow key={t.id}>
-                  <CTableDataCell className="text-uppercase">{t.nom}</CTableDataCell>
-                  <CTableDataCell>{t.quantite ?? 0}</CTableDataCell>
-                  <CTableDataCell>{t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}</CTableDataCell>
-                  <CTableDataCell>
-                    <CButton color="warning" className="me-2" onClick={() => openEdit(t)}>
-                      <CIcon icon={cilPencil} className="me-1" /> Modifier
-                    </CButton>
-                    <CButton color="danger" onClick={() => handleDelete(t)}>
-                      <CIcon icon={cilTrash} className="me-1" /> Supprimer
-                    </CButton>
-                  </CTableDataCell>
-                </CTableRow>
-              ))}
-            </CTableBody>
-          </CTable>
-        )}
-
-        {/* Modale édition */}
-        <CModal visible={editOpen} onClose={() => setEditOpen(false)}>
-          <CModalHeader onClose={() => setEditOpen(false)}>
-            <CModalTitle>Modifier la taille</CModalTitle>
-          </CModalHeader>
-          <CModalBody>
-            <CRow className="g-3">
-              <CCol md={6}>
-                <CFormLabel>Nom</CFormLabel>
-                <CFormInput value={editNom} onChange={(e) => setEditNom(e.target.value)} />
-              </CCol>
-              <CCol md={6}>
-                <CFormLabel>Quantité</CFormLabel>
-                <CFormInput type="number" min="0" value={editQte} onChange={(e) => setEditQte(e.target.value)} />
-              </CCol>
-            </CRow>
-          </CModalBody>
-          <CModalFooter>
-            <CButton color="secondary" variant="outline" onClick={() => setEditOpen(false)}>Annuler</CButton>
-            <CButton color="warning" onClick={handleUpdate}>
-              <CIcon icon={cilPencil} className="me-1" /> Enregistrer
-            </CButton>
-          </CModalFooter>
-        </CModal>
-      </CCardBody>
-    </CCard>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" variant="outline" onClick={() => setEditOpen(false)} style={{ borderRadius: 8 }}>
+            Annuler
+          </CButton>
+          <CButton color="warning" onClick={handleUpdate} style={{ borderRadius: 8, fontWeight: 600 }}>
+            <CIcon icon={cilPencil} className="me-1" /> Enregistrer
+          </CButton>
+        </CModalFooter>
+      </CModal>
+    </div>
   )
 }
 
