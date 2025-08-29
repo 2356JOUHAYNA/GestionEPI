@@ -504,6 +504,7 @@ const printPDFEmploye = () => {
           </CCardBody>
         </CCard>
       </CContainer>
+      
     </div>
   )
 }
