@@ -14,9 +14,9 @@ import { AppSidebarNav } from './AppSidebarNav'
 import navigation from '../_nav'
 
 // ⬇️ importe ton logo (grand) ; mets le vrai nom de fichier si différent
-import menaraLogo from 'src/assets/images/logo-menara.png'
+import menaraLogo from 'src/assets/images/logo-removebg-preview.png'
 // (optionnel) logo compact quand la sidebar est réduite ; tu peux réutiliser le même
-import menaraLogoSmall from 'src/assets/images/logo-menara.png'
+import menaraLogoSmall from 'src/assets/images/logo-removebg-preview.png'
 
 const AppSidebar = () => {
   const dispatch = useDispatch()

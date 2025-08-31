@@ -149,7 +149,7 @@ const AffectationForm = () => {
         }
 
         .card-header-custom {
-          background: linear-gradient(45deg, #28a745, #20c997);
+          background: linear-gradient(45deg, #764ba2 , #20c997);
           border: none;
           padding: 1.5rem 2rem;
           position: relative;
@@ -177,7 +177,7 @@ const AffectationForm = () => {
           background: white;
           border-radius: 15px;
           box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-          border-left: 4px solid #28a745;
+          border-left: 4px solid #764ba2 ;
           transition: all 0.3s ease;
         }
 
@@ -263,7 +263,7 @@ const AffectationForm = () => {
         }
 
         .btn-success-custom {
-          background: linear-gradient(45deg, #28a745, #20c997);
+          background: linear-gradient(45deg,#764ba2 ,#764ba2 );
           color: white;
         }
 
@@ -300,7 +300,7 @@ const AffectationForm = () => {
         }
 
         .section-title {
-          background: linear-gradient(45deg, #28a745, #20c997);
+          background: linear-gradient(45deg, #764ba2 , #764ba2 );
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;

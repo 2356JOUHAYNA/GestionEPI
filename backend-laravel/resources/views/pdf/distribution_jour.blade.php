@@ -10,8 +10,8 @@
   .meta p{ margin:2px 0 }
   .hr{ height:1px; background:#ddd; margin:10px 0 14px 0 }
 
-  table{ width:100%; border-collapse:collapse; margin-top:10px }
-  th,td{ border:1px solid #aaa; padding:6px; text-align:left; vertical-align:top }
+  table{ width:100%; border-collapse:collapse; margin-top:10px; table-layout: fixed; }
+  th,td{ border:1px solid #aaa; padding:6px; text-align:left; vertical-align:middle; word-wrap: break-word; }
   th{ background:#f4f6f8; font-weight:bold }
   tfoot td{ font-weight:bold }
 
@@ -22,6 +22,11 @@
 
   .right{ text-align:right }
   .center{ text-align:center }
+
+  /* Colonne signature */
+  .sigcell { padding: 0 6px; }
+  .sigbox  { height: 26px; margin: 6px auto; border: 1px dashed #888; border-radius: 3px; }
+  .sigline { width: 85%; height:0; border-top:1px solid #000; margin: 14px auto 6px; }
 
   .signatures{ width:100%; margin-top:36px; border-collapse:separate; border-spacing:18px 0 }
   .signature-box{ height:90px; padding:8px 12px; border:1px solid #bbb; border-radius:4px; }
@@ -50,14 +55,24 @@
   <div class="hr"></div>
 
   <table>
+    <colgroup>
+      <col style="width:40px">      <!-- # -->
+      <col>                         <!-- Matériel -->
+      <col style="width:110px">     <!-- Taille -->
+      <col style="width:120px">     <!-- Fréquence -->
+      <col style="width:80px">      <!-- Quantité -->
+      <col style="width:220px">     <!-- Traçabilité -->
+      <col style="width:140px">     <!-- Signature -->
+    </colgroup>
     <thead>
       <tr>
-        <th style="width:40px" class="center">#</th>
+        <th class="center">#</th>
         <th>Matériel</th>
-        <th style="width:110px">Taille</th>
-        <th style="width:120px" class="center">Fréquence (mois)</th> {{-- nombre_mois --}}
-        <th style="width:80px"  class="right">Quantité</th>
-        <th style="width:220px">Traçabilité</th>
+        <th>Taille</th>
+        <th class="center">Fréquence (mois)</th>
+        <th class="right">Quantité</th>
+        <th>Traçabilité</th>
+        <th class="center">Signature</th>
       </tr>
     </thead>
     <tbody>
@@ -68,7 +83,6 @@
           $taille   = optional($d->taille)->libelle ?? optional($d->taille)->nom ?? '—';
           $q        = (int)($d->quantite ?? 1);  $total += $q;
 
-          // Traçabilité : convertir JSON -> array si nécessaire
           $flags = $d->trace_mois ?? [];
           if (is_string($flags)) { $tmp=json_decode($flags,true); if (is_array($tmp)) $flags=$tmp; }
           $trace = '—';
@@ -82,18 +96,21 @@
           <td class="center">{{ $i++ }}</td>
           <td>{{ $materiel }}</td>
           <td>{{ $taille }}</td>
-          <td class="center">{{ $d->frequence_mois ?? '—' }}</td>  {{-- on affiche le nombre_mois --}}
+          <td class="center">{{ $d->frequence_mois ?? '—' }}</td>
           <td class="right">{{ $q }}</td>
           <td>{{ $trace }}</td>
+          <td class="sigcell">
+            <div class="sigbox"></div>
+            <div class="sigline"></div>
+          </td>
         </tr>
       @empty
-        <tr><td colspan="6" class="center">Aucune distribution pour cette date.</td></tr>
+        <tr><td colspan="7" class="center">Aucune distribution pour cette date.</td></tr>
       @endforelse
     </tbody>
     <tfoot>
       <tr>
-        {{-- 6 colonnes au total => 4 + 1 (total) + 1 (vide) --}}
-        <td colspan="4" class="right">Total</td>
+        <td colspan="5" class="right">Total</td>
         <td class="right">{{ $total }}</td>
         <td></td>
       </tr>
