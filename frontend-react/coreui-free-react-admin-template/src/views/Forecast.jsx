@@ -1,5 +1,5 @@
 // src/views/Forecast.jsx
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import api from '../utils/api'
 import {
   CCard, CCardHeader, CCardBody, CForm, CRow, CCol,
@@ -7,8 +7,110 @@ import {
   CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell,
   CAlert, CSpinner, CBadge,
 } from '@coreui/react'
-import Chatbot from '../components/Chatbot'
 
+/* ========================= Chatbot (widget flottant) ========================= */
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
+function Chatbot() {
+  const [open, setOpen] = useState(false)
+  const [input, setInput] = useState('')
+  const [messages, setMessages] = useState([
+    { from: 'bot', text: "Bonjour 👋 Pose-moi une question (ex: 'stock casque M', 'prévision gants L 3 mois', 'à commander 2 mois sécurité 5')." }
+  ])
+  const [loading, setLoading] = useState(false)
+  const listRef = useRef(null)
+
+  const scrollToBottom = () => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight
+  }
+  useEffect(scrollToBottom, [messages, open])
+
+  const send = async () => {
+    const text = input.trim()
+    if (!text) return
+    setMessages(m => [...m, { from: 'user', text }])
+    setInput('')
+    setLoading(true)
+    try {
+      const r = await fetch(`${API_BASE}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept':'application/json' },
+        body: JSON.stringify({ message: text })
+      })
+      const data = await r.json()
+      setMessages(m => [...m, { from: 'bot', text: data?.reply || "Pardon, je n'ai pas compris." }])
+    } catch (e) {
+      setMessages(m => [...m, { from: 'bot', text: "Erreur de connexion à l'API." }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      send()
+    }
+  }
+
+  return (
+    <>
+      <div style={{ position: 'fixed', right: 24, bottom: 24, zIndex: 9999 }}>
+        <CButton color="primary" className="rounded-circle shadow" style={{ width: 56, height: 56 }}
+          onClick={() => setOpen(o => !o)}>
+          💬
+        </CButton>
+      </div>
+
+      {open && (
+        <div style={{
+          position: 'fixed', right: 24, bottom: 96, width: 360, maxWidth: '90vw',
+          background: '#fff', border: '1px solid #ddd', borderRadius: 12,
+          boxShadow: '0 10px 30px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 9999
+        }}>
+          <div style={{ padding: '10px 12px', borderBottom: '1px solid #eee', fontWeight: 600 }}>
+            Assistant EPI
+          </div>
+
+          <div ref={listRef} style={{ height: 360, overflowY: 'auto', padding: 12, background: '#fafafa' }}>
+            {messages.map((m, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: m.from === 'user' ? 'flex-end' : 'flex-start', margin: '6px 0'
+              }}>
+                <div style={{
+                  maxWidth: '80%', whiteSpace: 'pre-wrap',
+                  background: m.from === 'user' ? '#321fdb' : '#fff',
+                  color: m.from === 'user' ? '#fff' : '#333',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12, padding: '8px 10px'
+                }}>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {loading && <div style={{ color: '#666', fontSize: 13 }}>… le bot réfléchit</div>}
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, padding: 10, borderTop: '1px solid #eee' }}>
+            <textarea
+              rows={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder="Écrivez un message…"
+              style={{ flex: 1, resize: 'none', border: '1px solid #ddd', borderRadius: 8, padding: '8px 10px' }}
+            />
+            <CButton color="primary" onClick={send} disabled={loading || !input.trim()}>
+              Envoyer
+            </CButton>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+/* ========================= Page Forecast ========================= */
 const SAMPLE_SERIES = {
   horizon_months: 6,
   series: [
@@ -31,21 +133,69 @@ export default function Forecast() {
   const [useDb, setUseDb] = useState(false)
   const [months, setMonths] = useState(12)
   const [horizon, setHorizon] = useState(6)
-  const [materielIds, setMaterielIds] = useState('') // ex: "1,2,5"
-  const [tailleIds, setTailleIds] = useState('')     // ex: "2,7"
+
+  // 🔽 NOUVEAU : champs qui acceptent NOMS **ou** IDs (séparés par des virgules)
+  const [materielQuery, setMaterielQuery] = useState('') // ex: "Casque, Gants, 5"
+  const [tailleQuery, setTailleQuery] = useState('')     // ex: "M, L, 2"
 
   const [rawJson, setRawJson] = useState(JSON.stringify(SAMPLE_SERIES, null, 2))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [rows, setRows] = useState([])
 
-  const parsedIds = (txt) =>
-    txt && txt.trim()
-      ? txt
-          .split(',')
-          .map((s) => parseInt(String(s).trim(), 10))
-          .filter((n) => Number.isInteger(n) && n > 0)
-      : []
+  // ---- helpers ----
+  const splitTerms = (txt) =>
+    (txt || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+
+  const isNumeric = (s) => /^\d+$/.test(s)
+
+  // Résout une liste de termes (noms/IDs) -> IDs via API
+  // type = 'materiels' | 'tailles'
+  const resolveIds = async (terms, type) => {
+    // Garder les IDs déjà numériques
+    const ids = terms.filter(isNumeric).map(s => parseInt(s, 10))
+
+    // Noms à résoudre
+    const names = terms.filter(t => !isNumeric(t))
+    if (names.length === 0) return ids
+
+    // Essaye un endpoint avec filtre q=term, sinon fallback (liste complète + filtrage)
+    const trySearchOne = async (term) => {
+      try {
+        // Endpoint principal attendu (à implémenter côté Laravel)
+        // /api/epi/materiels?q=Casque → [{id, nom}, ...]
+        // /api/epi/tailles?q=M       → [{id, nom}, ...]
+        const { data } = await api.get(`/epi/${type}`, { params: { q: term } })
+        if (Array.isArray(data) && data.length > 0) {
+          // prend le premier match (adapter selon logique)
+          return data[0].id
+        }
+      } catch (_) {
+        // Fallback: récupérer tout puis filtrer côté client
+        try {
+          const { data } = await api.get(`/epi/${type}`)
+          if (Array.isArray(data)) {
+            const found = data.find(item =>
+              String(item.nom || item.name || '').toLowerCase() === term.toLowerCase()
+            ) || data.find(item =>
+              String(item.nom || item.name || '').toLowerCase().includes(term.toLowerCase())
+            )
+            if (found) return found.id
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return null
+    }
+
+    const resolved = await Promise.all(names.map(trySearchOne))
+    resolved.forEach(id => { if (id != null) ids.push(id) })
+    return ids
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -57,16 +207,31 @@ export default function Forecast() {
       let payload
 
       if (useDb) {
+        // 🔽 Résolution noms -> IDs avant envoi
+        const materielTerms = splitTerms(materielQuery) // noms ou ids
+        const tailleTerms   = splitTerms(tailleQuery)   // noms ou ids
+
+        const materiel_ids = await resolveIds(materielTerms, 'materiels')
+        const taille_ids   = await resolveIds(tailleTerms, 'tailles')
+
+        if (materielTerms.length && materiel_ids.length === 0) {
+          throw new Error("Aucun matériel correspondant aux termes saisis.")
+        }
+        if (tailleTerms.length && taille_ids.length === 0) {
+          throw new Error("Aucune taille correspondante aux termes saisis.")
+        }
+
         const mh = Number(horizon)
         const mm = Number(months)
         payload = {
           from_db: true,
           months: Number.isFinite(mm) ? mm : 12,
           horizon_months: Number.isFinite(mh) ? mh : 6,
-          materiel_ids: parsedIds(materielIds),
-          taille_ids: parsedIds(tailleIds),
+          materiel_ids,
+          taille_ids,
         }
       } else {
+        // Mode manuel (payload JSON)
         let data
         try {
           data = JSON.parse(rawJson)
@@ -123,18 +288,14 @@ export default function Forecast() {
           }}
         >
           <div className="d-flex align-items-center">
-            <div className="me-3" style={{ fontSize: '1.5rem' }}>📊</div>
+            <div className="me-3" style={{ fontSize: '1.5rem' }}></div>
             <div>
               <h4 className="mb-0 fw-bold">Prévision des consommations</h4>
               <small className="opacity-75">Équipements de Protection Individuelle (EPI)</small>
             </div>
           </div>
-          <CBadge
-            color="light"
-            className="text-dark fw-bold px-3 py-2"
-            style={{ fontSize: '0.9rem', borderRadius: '20px' }}
-          >
-            🤖 AI
+          <CBadge color="light" className="text-dark fw-bold px-3 py-2" style={{ fontSize: '0.9rem', borderRadius: '20px' }}>
+             AI
           </CBadge>
         </CCardHeader>
 
@@ -173,12 +334,7 @@ export default function Forecast() {
                   <CCol md={6} lg={3}>
                     <CFormInput
                       type="number"
-                      label={
-                        <span className="fw-semibold">
-                          <span className="me-1">🎯</span>
-                          Horizon (mois)
-                        </span>
-                      }
+                      label={<span className="fw-semibold"><span className="me-1"></span>Horizon (mois)</span>}
                       min={1}
                       max={24}
                       value={horizon}
@@ -193,12 +349,7 @@ export default function Forecast() {
                       <CCol md={6} lg={2}>
                         <CFormInput
                           type="number"
-                          label={
-                            <span className="fw-semibold">
-                              <span className="me-1">📅</span>
-                              Historique (mois)
-                            </span>
-                          }
+                          label={<span className="fw-semibold"><span className="me-1"></span>Historique (mois)</span>}
                           min={6}
                           max={48}
                           value={months}
@@ -208,17 +359,13 @@ export default function Forecast() {
                         />
                       </CCol>
 
+                      {/* 🔽 NOUVEAU : champs noms/IDs */}
                       <CCol md={6} lg={2}>
                         <CFormInput
-                          label={
-                            <span className="fw-semibold">
-                              <span className="me-1">🔧</span>
-                              Matériel IDs
-                            </span>
-                          }
-                          placeholder="ex: 1,2,5"
-                          value={materielIds}
-                          onChange={(e) => setMaterielIds(e.target.value)}
+                          label={<span className="fw-semibold"><span className="me-1">🔧</span>Matériels (noms ou IDs)</span>}
+                          placeholder="ex: Casque, Gants, 5"
+                          value={materielQuery}
+                          onChange={(e) => setMaterielQuery(e.target.value)}
                           className="form-control-lg"
                           style={{ borderRadius: '8px' }}
                         />
@@ -226,15 +373,10 @@ export default function Forecast() {
 
                       <CCol md={6} lg={2}>
                         <CFormInput
-                          label={
-                            <span className="fw-semibold">
-                              <span className="me-1">📏</span>
-                              Taille IDs
-                            </span>
-                          }
-                          placeholder="ex: 2,7"
-                          value={tailleIds}
-                          onChange={(e) => setTailleIds(e.target.value)}
+                          label={<span className="fw-semibold"><span className="me-1">📏</span>Tailles (noms ou IDs)</span>}
+                          placeholder="ex: M, L, 2"
+                          value={tailleQuery}
+                          onChange={(e) => setTailleQuery(e.target.value)}
                           className="form-control-lg"
                           style={{ borderRadius: '8px' }}
                         />
@@ -245,11 +387,11 @@ export default function Forecast() {
               </div>
             </div>
 
-            {/* JSON (mode manuel) */}
+            {/* JSON manuel */}
             {!useDb && (
               <div className="mb-4">
                 <h5 className="mb-3 text-muted d-flex align-items-center">
-                  <span className="me-2">📝</span>
+                  <span className="me-2"></span>
                   Données personnalisées
                 </h5>
                 <div
@@ -261,12 +403,7 @@ export default function Forecast() {
                   }}
                 >
                   <CFormTextarea
-                    label={
-                      <span className="fw-semibold">
-                        <span className="me-1">🔗</span>
-                        Payload JSON (series)
-                      </span>
-                    }
+                    label={<span className="fw-semibold"><span className="me-1">🔗</span>Payload JSON (series)</span>}
                     rows={12}
                     value={rawJson}
                     onChange={(e) => setRawJson(e.target.value)}
@@ -282,7 +419,7 @@ export default function Forecast() {
               </div>
             )}
 
-            {/* Actions */}
+            {/* Boutons */}
             <div className="mb-4">
               <div
                 className="p-4 text-center"
@@ -312,7 +449,7 @@ export default function Forecast() {
                     </>
                   ) : (
                     <>
-                      <span className="me-2">🚀</span>
+                      <span className="me-2"></span>
                       Lancer la prévision
                     </>
                   )}
@@ -348,9 +485,7 @@ export default function Forecast() {
               }}
             >
               <div className="d-flex align-items-center">
-                <span className="me-2" style={{ fontSize: '1.2rem' }}>
-                  ⚠️
-                </span>
+                <span className="me-2" style={{ fontSize: '1.2rem' }}>⚠️</span>
                 <strong>{error}</strong>
               </div>
             </CAlert>
@@ -360,7 +495,7 @@ export default function Forecast() {
           {rows.length > 0 && (
             <div>
               <h5 className="mb-4 text-muted d-flex align-items-center">
-                <span className="me-2">📈</span>
+                <span className="me-2"></span>
                 Résultats de la prévision
                 <CBadge color="success" className="ms-2">
                   {Object.keys(grouped).length} série(s)
@@ -383,7 +518,7 @@ export default function Forecast() {
                   >
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h6 className="mb-0 fw-bold text-primary">
-                        <span className="me-2">🏷️</span>
+                        <span className="me-2"></span>
                         Matériel #{mid} — Taille #{tid === 'null' ? '—' : tid}
                       </h6>
                       <CBadge color="info" className="px-3 py-1">
@@ -428,8 +563,7 @@ export default function Forecast() {
                             <CTableRow
                               key={`${r.periode}-${i}`}
                               style={{
-                                background:
-                                  i % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(248,250,252,0.8)',
+                                background: i % 2 === 0 ? 'rgba(255,255,255,0.8)' : 'rgba(248,250,252,0.8)',
                               }}
                             >
                               <CTableDataCell className="fw-semibold py-3">{r.periode}</CTableDataCell>
@@ -446,12 +580,7 @@ export default function Forecast() {
                                 <CBadge
                                   color={r.modele === 'prophet' ? 'success' : 'secondary'}
                                   className="px-3 py-1"
-                                  style={{
-                                    borderRadius: '15px',
-                                    fontWeight: '600',
-                                    textTransform: 'uppercase',
-                                    fontSize: '0.75rem',
-                                  }}
+                                  style={{ borderRadius: '15px', fontWeight: '600', textTransform: 'uppercase', fontSize: '0.75rem' }}
                                 >
                                   {r.modele}
                                 </CBadge>

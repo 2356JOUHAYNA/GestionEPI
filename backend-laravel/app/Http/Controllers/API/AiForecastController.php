@@ -17,11 +17,6 @@ class AiForecastController extends Controller
         return response()->json($this->ai->health());
     }
 
-    /**
-     * Deux modes :
-     *  A) Passe-plat : payload { series: [...], horizon_months }
-     *  B) Depuis la BDD : { from_db: true, materiel_ids?, taille_ids?, months, horizon_months }
-     */
     public function forecast(Request $req): JsonResponse
     {
         $req->validate([
@@ -30,6 +25,8 @@ class AiForecastController extends Controller
             'from_db'        => ['nullable', 'boolean'],
             'materiel_ids'   => ['nullable', 'array'],
             'taille_ids'     => ['nullable', 'array'],
+            'materiel_names' => ['nullable', 'array'],   // ajout
+            'taille_names'   => ['nullable', 'array'],   // ajout
             'months'         => ['nullable', 'integer', 'min:6', 'max:48'],
         ]);
 
@@ -37,16 +34,35 @@ class AiForecastController extends Controller
         // ===== Mode BDD (MySQL) =====
         // ============================
         if ($req->boolean('from_db')) {
-            // Table attendue: stocks(materiel_id, taille_id, type_mouvement, quantite, date_mouvement)
             $months      = max((int) $req->integer('months', 12), 6);
             $materielIds = $req->input('materiel_ids', []);
             $tailleIds   = $req->input('taille_ids', []);
+
+            // Conversion noms -> IDs
+            if ($req->filled('materiel_names')) {
+                $materielIds = array_merge(
+                    $materielIds,
+                    DB::table('materiels')
+                        ->whereIn('nom', $req->input('materiel_names'))
+                        ->pluck('id')
+                        ->all()
+                );
+            }
+
+            if ($req->filled('taille_names')) {
+                $tailleIds = array_merge(
+                    $tailleIds,
+                    DB::table('tailles')
+                        ->whereIn('nom', $req->input('taille_names'))
+                        ->pluck('id')
+                        ->all()
+                );
+            }
 
             // Fenêtre: mois complets
             $start = now()->startOfMonth()->subMonths($months - 1)->toDateString();
             $end   = now()->endOfMonth()->toDateString();
 
-            // Demande = sorties 'OUT' (adapte IN/ADJ si besoin)
             $q = DB::table('stocks')
                 ->selectRaw("
                     materiel_id,
@@ -67,16 +83,14 @@ class AiForecastController extends Controller
 
             $rows = $q->get();
 
-            // Liste des mois de la fenêtre (YYYY-MM-01)
+            // Liste des mois de la fenêtre
             $allMonths = collect(range(0, $months - 1))
                 ->map(fn ($i) => now()->startOfMonth()->subMonths($months - 1 - $i)->format('Y-m-01'));
 
-            // Groupé par paire (materiel_id, taille_id)
+            // Groupé par materiel_id#taille_id
             $byKey = $rows->groupBy(fn ($r) => $r->materiel_id . '#' . ($r->taille_id ?? 'null'));
 
-            // Combinaisons cibles:
-            // - si des IDs sont fournis -> on force une série pour chaque combo même sans lignes
-            // - sinon -> on prend celles trouvées en BDD
+            // Déterminer les combos cibles
             $targetCombos = [];
             if (!empty($materielIds)) {
                 if (!empty($tailleIds)) {
@@ -97,7 +111,7 @@ class AiForecastController extends Controller
                 }
             }
 
-            // Construire les séries (mois manquants = 0)
+            // Construire les séries
             $series = [];
             foreach ($targetCombos as [$mid, $tid]) {
                 $key   = $mid . '#' . ($tid ?? 'null');
@@ -116,7 +130,6 @@ class AiForecastController extends Controller
                 ];
             }
 
-            // Aucun ID et aucune ligne trouvée -> note informative
             if (empty($series)) {
                 return response()->json([
                     'forecasts' => [],

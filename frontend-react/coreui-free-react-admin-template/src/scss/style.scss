@@ -65,3 +65,23 @@ body {
     --cui-footer-bg: var(--cui-body-bg);
   }
 }
+// Sidebar personnalisée #5427B8
+.sidebar {
+  --cui-sidebar-bg: #3B168A;     // 👉 couleur de fond (ex. vert foncé/noir)
+  --cui-sidebar-color: #ecf0f1;  // 👉 texte clair
+  --cui-sidebar-border-color: #5427B8; // 👉 bordure (optionnel)
+
+  .nav-link {
+    color: #ecf0f1 !important; // texte liens
+  }
+
+  .nav-link.active {
+    background-color: #5427B8 !important; // couleur de l'élément actif
+    color: #fff !important;
+  }
+
+  .nav-link:hover {
+    background-color:#5427B8!important; // hover
+    color: #fff !important;
+  }
+}

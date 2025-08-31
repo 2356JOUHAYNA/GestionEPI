@@ -229,7 +229,7 @@ const printPDFEmploye = () => {
         {/* Header */}
         <div className="text-center mb-4">
           <h1 className="text-white mb-2" style={{ fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-            🧰 Distribution EPI
+            Distribution EPI
           </h1>
           <p className="text-white-50" style={{ fontSize: '1.1rem' }}>
             Service généraux - Gestion des équipements de protection individuelle
@@ -255,7 +255,7 @@ const printPDFEmploye = () => {
                 <CForm className="d-flex gap-3 mb-0 align-items-end">
                   <div className="flex-grow-1">
                     <CFormLabel className="fw-bold text-muted mb-2">
-                      <span className="me-2">👤</span>Matricule employé
+                      <span className="me-2"></span>Matricule employé
                     </CFormLabel>
                     <CFormInput
                       placeholder="Ex: EMP001"
@@ -267,7 +267,7 @@ const printPDFEmploye = () => {
                   </div>
                   <div className="flex-grow-1">
                     <CFormLabel className="fw-bold text-muted mb-2">
-                      <span className="me-2">✏️</span>Nom de l'employé (PDF)
+                      <span className="me-2"></span>Nom de l'employé (PDF)
                     </CFormLabel>
                     <CFormInput
                       placeholder="Ex: Ahmed Ben Ali"
@@ -285,7 +285,7 @@ const printPDFEmploye = () => {
                       disabled={loading}
                       style={{ borderRadius: 8, padding: '12px 24px', fontWeight: 600, background: 'linear-gradient(45deg, #667eea, #764ba2)', border: 'none', boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)' }}
                     >
-                      {loading ? (<><CSpinner size="sm" className="me-2" />Recherche...</>) : '🔍 Rechercher'}
+                      {loading ? (<><CSpinner size="sm" className="me-2" />Recherche...</>) : 'Rechercher'}
                     </CButton>
                   </div>
                   {employe && (
@@ -296,7 +296,7 @@ const printPDFEmploye = () => {
                         size="lg"
                         style={{ borderRadius: 8, padding: '12px 24px', fontWeight: 600, background: 'linear-gradient(45deg, #2ed573, #7bed9f)', border: 'none', boxShadow: '0 4px 15px rgba(46, 213, 115, 0.3)' }}
                       >
-                        🖨️ Imprimer la fiche
+                         Imprimer la fiche
                       </CButton>
                     </div>
                   )}
@@ -323,9 +323,9 @@ const printPDFEmploye = () => {
                             {employe.nom} {employe.prenom}
                           </h4>
                           <div className="d-flex flex-wrap gap-2">
-                            <CBadge color="light" text="dark" className="px-2 py-1">📋 {employe.matricule}</CBadge>
-                            <CBadge color="warning" className="px-2 py-1">💼 {employe.fonction || 'Non défini'}</CBadge>
-                            <CBadge color="info" className="px-2 py-1">👨‍💼 Manager: {employe.manager?.nom || 'Aucun'}</CBadge>
+                            <CBadge color="light" text="dark" className="px-2 py-1">{employe.matricule}</CBadge>
+                            <CBadge color="warning" className="px-2 py-1"> {employe.fonction || 'Non défini'}</CBadge>
+                            <CBadge color="info" className="px-2 py-1">Manager: {employe.manager?.nom || 'Aucun'}</CBadge>
                           </div>
                         </div>
                       </div>
@@ -346,7 +346,7 @@ const printPDFEmploye = () => {
               <CCard className="border-0 shadow-sm" style={{ borderRadius: 10 }}>
                 <CCardHeader className="bg-light border-0" style={{ borderRadius: '10px 10px 0 0' }}>
                   <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="mb-0 fw-bold text-dark">📦 Matériels à distribuer</h5>
+                    <h5 className="mb-0 fw-bold text-dark">Matériels à distribuer</h5>
                     <CBadge color="primary" className="px-3 py-2">
                       {lignes.length} article{lignes.length > 1 ? 's' : ''}
                     </CBadge>
@@ -461,16 +461,11 @@ const printPDFEmploye = () => {
                                   onClick={() => distributeOne(idx)}
                                   style={{ borderRadius: 6, fontWeight: 600, boxShadow: '0 2px 8px rgba(46, 213, 115, 0.3)' }}
                                 >
-                                  ✅ Distribuer
+                                   Distribuer
                                 </CButton>
-                                <CButton
-                                  color="info"
-                                  size="sm"
-                                  onClick={() => printPDF(idx)}
-                                  style={{ borderRadius: 6, fontWeight: 600, boxShadow: '0 2px 8px rgba(52, 152, 219, 0.3)' }}
-                                >
-                                  🖨️
-                                </CButton>
+                                
+                                  
+                               
                                 <CButton
                                   color="danger"
                                   size="sm"
@@ -504,6 +499,7 @@ const printPDFEmploye = () => {
           </CCardBody>
         </CCard>
       </CContainer>
+      
     </div>
   )
 }
