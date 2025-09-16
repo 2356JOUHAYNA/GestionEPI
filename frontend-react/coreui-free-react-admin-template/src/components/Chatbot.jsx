@@ -1,22 +1,20 @@
-// src/components/Chatbot.jsx
 import React, { useEffect, useRef, useState } from 'react'
 import { CButton } from '@coreui/react'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-const PRIMARY_ENDPOINT = `${API}/api/epi/chat`   // si tes routes sont sous /api/epi
-const FALLBACK_ENDPOINT = `${API}/api/chat`      // fallback si tu déplaces la route
+const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const CHAT_ENDPOINT = `${API_BASE}/api/epi/chat` 
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
   const [messages, setMessages] = useState([
     {
       from: 'bot',
       text:
-        "Bonjour 👋 Pose-moi une question (ex: 'stock casque M', 'prévision gants L 3 mois', 'à commander 2 mois sécurité 5').",
+        "Bonjour 👋 Pose-moi une question (ex: 'stock chaussur 38', 'prévision chaussur 38 6 mois', 'à commander 2 mois sécurité 5').",
     },
   ])
-  const [loading, setLoading] = useState(false)
   const listRef = useRef(null)
 
   const scrollToBottom = () => {
@@ -24,9 +22,9 @@ export default function Chatbot() {
   }
   useEffect(scrollToBottom, [messages, open])
 
-  const postChat = async (url, text) => {
-    const token = localStorage.getItem('token')
-    const res = await fetch(url, {
+  async function sendMessage(text) {
+    const token = localStorage.getItem('token') // si tu en as un, sinon ignore
+    const res = await fetch(CHAT_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -35,18 +33,14 @@ export default function Chatbot() {
       },
       body: JSON.stringify({ message: text }),
     })
+    const isJson = res.headers.get('content-type')?.includes('application/json')
+    const data = isJson ? await res.json() : null
 
     if (!res.ok) {
-      const err = new Error(`HTTP ${res.status}`)
-      err.status = res.status
-      throw err
+      const reason = data?.message || `${res.status} ${res.statusText}`
+      throw new Error(reason)
     }
-
-    try {
-      return await res.json()
-    } catch {
-      return {}
-    }
+    return data
   }
 
   const send = async () => {
@@ -58,28 +52,16 @@ export default function Chatbot() {
     setLoading(true)
 
     try {
-      // Essai 1 : /api/epi/chat
-      let data = await postChat(PRIMARY_ENDPOINT, text)
-
-      // Fallback automatique si pas de reply (ex: 404 sur la première route)
-      if (!data?.reply) {
-        try {
-          data = await postChat(FALLBACK_ENDPOINT, text)
-        } catch {
-          // on ignore, l'erreur d'origine sera gérée ci-dessous
-        }
-      }
-
-      setMessages((m) => [
-        ...m,
-        { from: 'bot', text: data?.reply || "Pardon, je n'ai pas compris." },
-      ])
+      const data = await sendMessage(text)
+      setMessages((m) => [...m, { from: 'bot', text: data?.reply ?? "Pardon, je n'ai pas compris." }])
     } catch (e) {
-      const hint =
-        e?.status === 404
-          ? "Endpoint introuvable. Vérifie ta route Laravel: POST /api/epi/chat (ou /api/chat)."
-          : "Erreur de connexion à l'API."
-      setMessages((m) => [...m, { from: 'bot', text: hint }])
+      const msg =
+        String(e.message || '')
+          .toLowerCase()
+          .includes('not found') || String(e.message || '').startsWith('404')
+          ? "❌ Endpoint introuvable. Vérifie que l'API répond sur POST /api/epi/chat."
+          : `❌ Erreur API: ${e.message}`
+      setMessages((m) => [...m, { from: 'bot', text: msg }])
     } finally {
       setLoading(false)
     }
@@ -124,29 +106,13 @@ export default function Chatbot() {
             zIndex: 9999,
           }}
         >
-          <div
-            style={{
-              padding: '10px 12px',
-              borderBottom: '1px solid #eee',
-              fontWeight: 600,
-            }}
-          >
+          <div style={{ padding: '10px 12px', borderBottom: '1px solid #eee', fontWeight: 600 }}>
             Assistant EPI
           </div>
 
-          <div
-            ref={listRef}
-            style={{ height: 360, overflowY: 'auto', padding: 12, background: '#fafafa' }}
-          >
+          <div ref={listRef} style={{ height: 360, overflowY: 'auto', padding: 12, background: '#fafafa' }}>
             {messages.map((m, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  justifyContent: m.from === 'user' ? 'flex-end' : 'flex-start',
-                  margin: '6px 0',
-                }}
-              >
+              <div key={i} style={{ display: 'flex', justifyContent: m.from === 'user' ? 'flex-end' : 'flex-start', margin: '6px 0' }}>
                 <div
                   style={{
                     maxWidth: '80%',
