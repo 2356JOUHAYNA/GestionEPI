@@ -135,14 +135,9 @@ const _nav = [
   },
  
 
-  { component: CNavTitle, name: 'Pages' },
+      { component: CNavTitle, name: 'Pages' },
       { component: CNavItem, name: 'Cards',  to: '/base/cards',  private: true },
       { component: CNavItem, name: 'Tables', to: '/base/tables', private: true },
-    ],
-  },
-
-  // --- Pages publiques / invité
-  { component: CNavTitle, name: 'Pages' },
   {
     component: CNavItem,
     name: 'Login',

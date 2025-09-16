@@ -175,7 +175,7 @@ Route::prefix('epi')->group(function () {
     Route::get('/distributions/pdf/{affectationId}/{detailId}/{employeId}', [PDFController::class, 'distributionLinePDF']);
    
     Route::get('/stocks', [StockController::class, 'index']);                    // stock courant
-    Route::get('/stocks/{materiel}/history', [StockController::class, 'history']); // historique
+    Route::get('/stocks/{materiel}/history', [StockController::class, 'historymateriel']); // historique
     Route::get('/stocks', [StockController::class, 'stocks']);
     Route::get('/previsions', [StockController::class, 'previsions']);
     Route::get('/reco-appro', [StockController::class, 'recommandations']);
@@ -200,5 +200,5 @@ Route::prefix('epi')->group(function () {
     Route::post('/chat', [\App\Http\Controllers\ChatController::class, 'handle']);
 Route::get('/chat/test', fn() => response()->json(['ok' => true]));
     
-});
+
 

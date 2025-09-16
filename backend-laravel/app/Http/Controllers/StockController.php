@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\StockService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
@@ -68,7 +67,7 @@ class StockController extends Controller
 
     // Historique d’un matériel
    
-   public function history($materielId)
+   public function historymateriel($materielId)
 {
     $rows = DB::table('stocks as s')
         ->leftJoin('tailles as t', 't.id', '=', 's.taille_id')

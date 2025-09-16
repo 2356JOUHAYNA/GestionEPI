@@ -13,8 +13,6 @@ import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser, cilSettings } from '@coreui/icons'
 import API from '../../api.js'
 import avatar8 from './../../assets/images/avatars/8.jpg'
-
-const AppHeaderDropdown = () => {
   
 export default function AppHeaderDropdown() {
   // Utilisateur stocké après login
