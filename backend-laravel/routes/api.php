@@ -70,6 +70,8 @@ Route::prefix('epi')->group(function () {
     Route::get('/chat/test', fn() => response()->json(['ok' => true]));
    Route::get('/distributions/pdf/{affectation}/{detail}', 
     [PDFController::class, 'generateAffectationPDF']);
+    Route::post('/chat', [\App\Http\Controllers\ChatController::class, 'handle']);
+Route::get('/chat/test', fn() => response()->json(['ok' => true]));
     
 });
 

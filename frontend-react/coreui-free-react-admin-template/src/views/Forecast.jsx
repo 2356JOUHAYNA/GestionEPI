@@ -15,7 +15,7 @@ function Chatbot() {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([
-    { from: 'bot', text: "Bonjour 👋 Pose-moi une question (ex: 'stock casque M', 'prévision gants L 3 mois', 'à commander 2 mois sécurité 5')." }
+    { from: 'bot', text: "Bonjour 👋 Pose-moi une question (ex: 'stock Tennu M', 'prévision gants L 3 mois', 'à commander 2 mois sécurité 5')." }
   ])
   const [loading, setLoading] = useState(false)
   const listRef = useRef(null)
@@ -32,11 +32,11 @@ function Chatbot() {
     setInput('')
     setLoading(true)
     try {
-      const r = await fetch(`${API_BASE}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept':'application/json' },
-        body: JSON.stringify({ message: text })
-      })
+       const r = await fetch(`${API_BASE}/api/epi/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept':'application/json' },
+    body: JSON.stringify({ message: text })
+})
       const data = await r.json()
       setMessages(m => [...m, { from: 'bot', text: data?.reply || "Pardon, je n'ai pas compris." }])
     } catch (e) {

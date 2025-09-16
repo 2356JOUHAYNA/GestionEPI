@@ -1,95 +1,157 @@
 <?php
 
 namespace App\Services;
+
 use App\Models\Stock;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Carbon\Carbon;
+
 class StockService
 {
     /**
-     * Calcule le stock actuel par (matériel, taille).
+     * Stock actuel par (matériel, taille) en se basant UNIQUEMENT sur la table `stocks`.
+     * - pas de dépendance à tailles.quantite (absente chez toi)
+     * - joint les libellés depuis `materiels` et `tailles`
      */
     public function getStocksActuels()
     {
-        return DB::table('tailles')
+        // Agrégat mouvements par paire (materiel_id, taille_id)
+        $agg = DB::table('stocks')
+            ->select([
+                'materiel_id',
+                'taille_id',
+                DB::raw("SUM(
+                    CASE
+                      WHEN type_mouvement = 'IN'  THEN quantite
+                      WHEN type_mouvement = 'OUT' THEN -quantite
+                      WHEN type_mouvement = 'ADJ' THEN quantite
+                      ELSE 0
+                    END
+                ) AS stock_actuel"),
+            ])
+            ->groupBy('materiel_id', 'taille_id');
+
+        // Joindre libellés + inclure aussi les tailles sans mouvement (stock = 0)
+        // (LEFT JOIN de tailles vers sous-requête d'agrégat)
+        $rows = DB::table('tailles')
             ->join('materiels', 'materiels.id', '=', 'tailles.materiel_id')
-            ->select('materiels.nom as materiel_nom','tailles.id as taille_id','tailles.nom as taille_nom')
-            ->selectRaw('
-                (COALESCE(tailles.quantite,0) + COALESCE((
-                    SELECT SUM(
-                        CASE
-                          WHEN type_mouvement = \'IN\'  THEN quantite
-                          WHEN type_mouvement = \'OUT\' THEN -quantite
-                          WHEN type_mouvement = \'ADJ\' THEN quantite
-                          ELSE 0
-                        END
-                    )
-                    FROM stocks s
-                    WHERE s.materiel_id = tailles.materiel_id
-                      AND s.taille_id   = tailles.id
-                ),0)) AS stock_actuel
-            ')
+            ->leftJoinSub($agg, 'mv', function ($join) {
+                $join->on('mv.materiel_id', '=', 'tailles.materiel_id')
+                     ->on('mv.taille_id',   '=', 'tailles.id');
+            })
+            ->select([
+                'materiels.id  as materiel_id',
+                'materiels.nom as materiel_nom',
+                'tailles.id    as taille_id',
+                'tailles.nom   as taille_nom',
+                DB::raw('COALESCE(mv.stock_actuel, 0) as stock_actuel'),
+            ])
+            ->orderBy('materiels.nom')
+            ->orderBy('tailles.nom')
             ->get();
+
+        return $rows;
     }
 
     /**
-     * Récupère les prévisions de la table previsions_stock.
+     * Prévisions simples pour le graphe:
+     * - moyenne des sorties (OUT) des 3 derniers mois pour la paire demandée
+     * - projetée sur les `months` prochains mois (YYYY-MM)
      */
-    public function getPrevisions($materielId, $tailleId, $months = 6)
+   public function getPrevisions($materielId, $tailleId, $months = 6)
     {
-        return DB::table('previsions_stock')
-            ->where('materiel_id', $materielId)
-            ->where('taille_id', $tailleId)
-            ->orderBy('periode')
+        $months = max(1, (int) $months);
+
+        $start = Carbon::now()->startOfMonth();
+        $end   = (clone $start)->addMonthsNoOverflow($months - 1)->endOfMonth();
+
+        $rows = DB::table('previsions_stock as p')
+            ->join('materiels as m', 'm.id', '=', 'p.materiel_id')
+            ->join('tailles as t', 't.id', '=', 'p.taille_id')
+            ->where('p.materiel_id', $materielId)
+            ->where('p.taille_id',   $tailleId)
+            ->whereBetween('p.periode', [$start->toDateString(), $end->toDateString()])
+            ->orderBy('p.periode')
             ->limit($months)
-            ->get();
+            ->get([
+                'p.periode',
+                'p.qte_prevue',
+                'm.nom as materiel_nom',
+                't.nom as taille_nom',
+            ]);
+
+        // Map au format attendu par le front
+        return $rows->map(function ($r) {
+            return [
+                'periode'      => \Carbon\Carbon::parse($r->periode)->format('Y-m'),
+                'qte_prevue'   => (int) $r->qte_prevue,
+                'materiel_nom' => $r->materiel_nom,
+                'taille_nom'   => $r->taille_nom,
+            ];
+        });
     }
 
+
+
     /**
-     * Génère recommandations d’approvisionnement
+     * Recommandations:
+     * - demande_window = sorties (OUT) sur les N DERNIERS mois
+     * - a_commander = max(demande_window + safety - stock_actuel, 0)
      */
     public function getRecommandations($months = 2, $safety = 5)
-    {
-        $stocks = $this->getStocksActuels();
+{
+    $months = max(1, (int) $months);
+    $safety = max(0, (int) $safety);
 
-        $reco = [];
+    $start = Carbon::now()->startOfMonth();
+    $end   = (clone $start)->addMonthsNoOverflow($months - 1)->endOfMonth();
 
-        foreach ($stocks as $row) {
-            // Demande future = somme des prévisions sur la fenêtre
-            $demande = DB::table('previsions_stock')
-                ->where('materiel_id', $row->materiel_id)
-                ->where('taille_id', $row->taille_id)
-                ->orderBy('periode')
-                ->limit($months)
-                ->sum('qte_prevue');
+    $stocks = $this->getStocksActuels();
 
-            $qtyToOrder = max(0, $demande + $safety - $row->stock_actuel);
+    $demandeParPaire = DB::table('previsions_stock')
+        ->select('materiel_id', 'taille_id', DB::raw('SUM(qte_prevue) as demande_window'))
+        ->whereBetween('periode', [$start->toDateString(), $end->toDateString()])
+        ->groupBy('materiel_id', 'taille_id')
+        ->get()
+        ->keyBy(fn($r) => $r->materiel_id . ':' . $r->taille_id);
 
-            $reco[] = [
-                'materiel'   => $row->materiel_nom,
-                'taille'     => $row->taille_nom,
-                'stock_actuel' => $row->stock_actuel,
-                'demande'    => $demande,
-                'stock_securite' => $safety,
-                'a_commander' => $qtyToOrder,
-            ];
-        }
+    $reco = [];
+    foreach ($stocks as $row) {
+        $key = $row->materiel_id . ':' . $row->taille_id;
+        $demandeWindow = (int) ($demandeParPaire[$key]->demande_window ?? 0);
+        $stockActuel   = (int) $row->stock_actuel;
+        $toOrder       = max(0, $demandeWindow + $safety - $stockActuel);
 
-        return $reco;
+        $reco[] = [
+            'materiel'        => $row->materiel_nom,
+            'taille'          => $row->taille_nom,
+            'stock_actuel'    => $stockActuel,
+            'demande_window'  => $demandeWindow,
+            'a_commander'     => $toOrder,
+        ];
     }
+
+    return $reco;
+}
+
+
+    /**
+     * Journal des mouvements (utilise ta table `stocks` telle que sur la capture).
+     */
     public function move(array $payload): Stock
     {
         $materielId = (int) ($payload['materiel_id'] ?? 0);
         $tailleId   = array_key_exists('taille_id', $payload)
             ? ($payload['taille_id'] === null ? null : (int) $payload['taille_id'])
             : null;
-        $type       = $payload['type_mouvement'] ?? null;
+        $type       = $payload['type_mouvement'] ?? null; // 'IN' | 'OUT' | 'ADJ'
         $qty        = (int) ($payload['quantite'] ?? 0);
 
         if ($materielId <= 0) {
             throw new InvalidArgumentException('materiel_id requis.');
         }
-        if (!in_array($type, [Stock::TYPE_IN, Stock::TYPE_OUT, Stock::TYPE_ADJ], true)) {
+        if (!in_array($type, ['IN', 'OUT', 'ADJ'], true)) {
             throw new InvalidArgumentException('type_mouvement invalide (IN|OUT|ADJ).');
         }
         if ($qty < 1) {
@@ -97,10 +159,6 @@ class StockService
         }
 
         return DB::transaction(function () use ($payload, $materielId, $tailleId, $type, $qty) {
-            if ($type === Stock::TYPE_OUT) {
-                // si tu veux empêcher stock négatif, garde ton contrôle ici
-            }
-
             $row = new Stock();
             $row->materiel_id    = $materielId;
             $row->taille_id      = $tailleId;
