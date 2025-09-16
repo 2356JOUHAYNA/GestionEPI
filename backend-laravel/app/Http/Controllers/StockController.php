@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\StockService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
@@ -55,5 +57,51 @@ class StockController extends Controller
     {
         // implémente si besoin
         return response()->json(['ok' => true, 'materiel' => (int)$materiel]);
+        // retourne: [{id, nom, stock_actuel}]
+        $materiels = Materiel::select('id','nom')->get()
+            ->map(function($m){
+                $stock = app(StockService::class)->currentFor($m->id);
+                return ['id'=>$m->id,'nom'=>$m->nom,'stock'=>$stock];
+            });
+        return response()->json($materiels);
     }
+
+    // Historique d’un matériel
+   
+   public function history($materielId)
+{
+    $rows = DB::table('stocks as s')
+        ->leftJoin('tailles as t', 't.id', '=', 's.taille_id')
+        ->where('s.materiel_id', $materielId)
+        ->orderByDesc('s.date_mouvement')
+        ->select(
+            's.date_mouvement',
+            's.type_mouvement',
+            's.quantite',
+            's.motif',
+            's.taille_id',
+            DB::raw('t.nom as taille_nom')
+        )
+        ->get();
+
+    return response()->json($rows);
+}
+    // Enregistrer un mouvement (entrée / sortie / ajustement)
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'materiel_id'    => 'required|exists:materiels,id',
+            'type_mouvement' => 'required|in:IN,OUT,ADJ',
+            'quantite'       => 'required|integer|min:1',
+            'date_mouvement' => 'required|date',
+            'motif'          => 'nullable|string|max:255',
+            'reference_type' => 'nullable|string',
+            'reference_id'   => 'nullable|integer',
+        ]);
+
+        $row = $this->service->move($data);
+        return response()->json(['message'=>'Mouvement enregistré','data'=>$row], 201);
+    }
+
+    
 }

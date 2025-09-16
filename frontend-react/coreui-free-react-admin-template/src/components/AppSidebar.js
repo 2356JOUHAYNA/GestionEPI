@@ -11,6 +11,8 @@ import {
 } from '@coreui/react'
 
 import { AppSidebarNav } from './AppSidebarNav'
+
+// sidebar nav config
 import navigation from '../_nav'
 
 // ⬇️ importe ton logo (grand) ; mets le vrai nom de fichier si différent
@@ -49,6 +51,19 @@ const AppSidebar = () => {
             className="sidebar-brand-narrow"
             height={28}
             style={{ objectFit: 'contain' }}
+          />
+          {/* ✅ Logo Menara Préfa depuis /public */}
+          <img
+            src="/logomenaraprefa.png"
+            alt="Menara Préfa"
+            className="sidebar-brand-full"
+            style={{ height: 40 }}
+          />
+          <img
+            src="/logomenaraprefa.png"
+            alt="Menara Préfa"
+            className="sidebar-brand-narrow"
+            style={{ height: 32 }}
           />
         </CSidebarBrand>
 

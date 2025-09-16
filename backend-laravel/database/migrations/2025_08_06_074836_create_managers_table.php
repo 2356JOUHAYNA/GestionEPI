@@ -9,11 +9,16 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up()
+   public function up(): void
 {
+    if (Schema::hasTable('managers')) {
+        // La table existe déjà, on ne fait rien
+        return;
+    }
+
     Schema::create('managers', function (Blueprint $table) {
         $table->id();
-        $table->string('matricule')->unique();
+        $table->string('matricule');
         $table->string('nom');
         $table->string('fonction')->nullable();
         $table->timestamps();

@@ -4,9 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Stock extends Model
 {
+    use HasFactory;
+
+    public const IN  = 'IN';
+    public const OUT = 'OUT';
+    public const ADJ = 'ADJ';
+
+    // ✅ UNE SEULE liste blanche (fillable) qui regroupe tous les champs utiles
     use HasFactory;
 
     protected $table = 'stocks';
@@ -36,8 +45,21 @@ class Stock extends Model
      * Relation avec le matériel
      */
     public function materiel()
+    protected $casts = [
+        'materiel_id'    => 'integer',
+        'taille_id'      => 'integer',
+        'quantite'       => 'integer',
+        'date_mouvement' => 'date', // mets 'datetime' si ta colonne est DATETIME/TIMESTAMP
+    ];
+
+    public function materiel(): BelongsTo
     {
         return $this->belongsTo(Materiel::class, 'materiel_id');
+    }
+
+    public function taille(): BelongsTo
+    {
+        return $this->belongsTo(Taille::class);
     }
 
     /**

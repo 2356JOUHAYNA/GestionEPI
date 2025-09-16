@@ -10,9 +10,14 @@ class Affectation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'manager_id', 
-        'date',
+        'manager_id',
+        'date_affectation',   // ← nom réel de la colonne en BDD
         'commentaire',
+    ];
+
+    // (optionnel mais utile)
+    protected $casts = [
+        'date_affectation' => 'date', // ou 'datetime' selon ton schéma
     ];
 
     /**
