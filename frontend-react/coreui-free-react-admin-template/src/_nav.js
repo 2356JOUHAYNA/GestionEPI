@@ -1,3 +1,4 @@
+// src/_nav.js
 import React from 'react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -17,124 +18,134 @@ import {
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
 const _nav = [
+  // --- Pages privées
   {
     component: CNavItem,
     name: 'Dashboard',
     to: '/dashboard',
     icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Affectations',
-    to: '/affectation',
-    icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />,
+    private: true,
   },
 
-  // 👉 AJOUT : lien Managers
+  // {
+  //   component: CNavItem,
+  //   name: 'Affectations',
+  //   to: '/affectation',
+  //   icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />,
+  //   private: true,
+  // },
+
+  // ----- Section Thèmes
+  { component: CNavTitle, name: 'Gestion', private: true },
+
   {
     component: CNavItem,
     name: 'Managers',
     to: '/manager',
-    icon: <CIcon icon={cilCursor} customClassName="nav-icon" />,
-  },
-
-  {
-    component: CNavTitle,
-    name: 'Thèmes',
+    icon: <span style={{
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: 'white',
+    marginRight: '20px'   // <-- espace entre le rond et le texte
+  }}></span>,
+    private: true,
   },
   {
     component: CNavItem,
-    name: 'Couleurs',
+    name: 'Stock',
     to: '/theme/colors',
-    icon: <CIcon icon={cilDrop} customClassName="nav-icon" />,
+    icon: <span style={{
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: 'white',
+    marginRight: '20px'   // <-- espace entre le rond et le texte
+  }}></span>,
+    private: true,
   },
   {
     component: CNavItem,
-    name: 'Typographie',
+    name: 'Tailles',
     to: '/theme/typography',
-    icon: <CIcon icon={cilPencil} customClassName="nav-icon" />,
+    icon: <span style={{
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: 'white',
+    marginRight: '20px'   // <-- espace entre le rond et le texte
+  }}></span>,
+    private: true,
   },
-  // 👉 Ajout : lien vers ta nouvelle page Matériel
   {
     component: CNavItem,
     name: 'Matériel',
     to: '/theme/materiel',
-    icon: <CIcon icon={cilNotes} customClassName="nav-icon" />,
+    icon: <span style={{
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: 'white',
+    marginRight: '20px'   // <-- espace entre le rond et le texte
+  }}></span>,
+    private: true,
   },
-  // 👉 AJOUT : lien Employés
   {
     component: CNavItem,
     name: 'Employés',
     to: '/theme/employer',
-    icon: <CIcon icon={cilCursor} customClassName="nav-icon" />,
+    icon: <span style={{
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: 'white',
+    marginRight: '20px'   // <-- espace entre le rond et le texte
+  }}></span>,
+    private: true,
   },
 
-  {
-    component: CNavTitle,
-    name: 'Composants',
-  },
+  // ----- Section Composants
+  { component: CNavTitle, name: 'Composants', private: true },
   {
     component: CNavGroup,
     name: 'Base',
     to: '/base',
     icon: <CIcon icon={cilPuzzle} customClassName="nav-icon" />,
+    private: true,
     items: [
-      {
-        component: CNavItem,
-        name: 'Cards',
-        to: '/base/cards',
-      },
-      {
-        component: CNavItem,
-        name: 'Tables',
-        to: '/base/tables',
-      },
+      { component: CNavItem, name: 'Cards',  to: '/base/cards',  private: true },
+      { component: CNavItem, name: 'Tables', to: '/base/tables', private: true },
     ],
   },
-  {
-    component: CNavItem,
-    name: 'Graphiques',
-    to: '/charts',
-    icon: <CIcon icon={cilChartPie} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Notifications',
-    to: '/notifications/alerts',
-    icon: <CIcon icon={cilBell} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Widgets',
-    to: '/widgets',
-    icon: <CIcon icon={cilCalculator} customClassName="nav-icon" />,
-    badge: {
-      color: 'info',
-      text: 'Nouveau',
-    },
-  },
-  {
-    component: CNavTitle,
-    name: 'Pages',
-  },
+
+  // --- Pages publiques / invité
+  { component: CNavTitle, name: 'Pages' },
   {
     component: CNavItem,
     name: 'Login',
     to: '/login',
     icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
+    guestOnly: true,
   },
   {
     component: CNavItem,
     name: 'Inscription',
     to: '/register',
     icon: <CIcon icon={cilStar} customClassName="nav-icon" />,
+    guestOnly: true,
   },
-  {
-    component: CNavItem,
-    name: 'Documentation',
-    href: 'https://coreui.io/react/docs/',
-    icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
-  },
+
+  // {
+  //   component: CNavItem,
+  //   name: 'Documentation',
+  //   href: 'https://coreui.io/react/docs/',
+  //   icon: <CIcon icon={cilDescription} customClassName="nav-icon" />,
+  // },
 ]
 
 export default _nav

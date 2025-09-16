@@ -1,3 +1,4 @@
+
 // src/views/theme/Materiel/MaterielCrud.js
 import React, { useEffect, useMemo, useState } from 'react'
 import {
@@ -364,7 +365,7 @@ const MaterielCrud = () => {
             className="text-white mb-2"
             style={{ fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
           >
-            🧰 Gestion du Stock des Matériels
+             Gestion du Stock des Matériels
           </h1>
           <p className="text-white-50" style={{ fontSize: '1.1rem' }}>
             Service généraux — Mouvements, suivi des tailles et historique
@@ -383,12 +384,13 @@ const MaterielCrud = () => {
           >
             <div className="d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center">
-                <span className="me-2" style={{ fontSize: '1.5rem' }}>➕</span>
+                <span className="me-2" style={{ fontSize: '1.5rem' }}></span>
                 Ajouter un mouvement
               </div>
-              <CBadge color="light" text="dark" className="px-3 py-2">
-                {materiels.length} matériel{materiels.length > 1 ? 's' : ''}
+              <CBadge color="success" className="px-3 py-2">
+              {materiels.length} matériel{materiels.length > 1 ? 's' : ''}
               </CBadge>
+
             </div>
           </CCardHeader>
 
@@ -407,7 +409,7 @@ const MaterielCrud = () => {
               <CRow className="g-3">
                 <CCol md={6}>
                   <CFormLabel className="fw-bold text-muted mb-2">
-                    <span className="me-2">🔧</span>Type de matériel
+                    <span className="me-2"></span>Type de matériel
                   </CFormLabel>
                   <CFormSelect
                     value={materielChoisiId}
@@ -423,7 +425,7 @@ const MaterielCrud = () => {
 
                 <CCol md={6}>
                   <CFormLabel className="fw-bold text-muted mb-2">
-                    <span className="me-2">🧩</span>Catégorie
+                    <span className="me-2"></span>Catégorie
                   </CFormLabel>
                   <CFormSelect
                     value={categorieId}
@@ -576,12 +578,13 @@ const MaterielCrud = () => {
           >
             <div className="d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center">
-                <span className="me-2" style={{ fontSize: '1.5rem' }}>📋</span>
+                <span className="me-2" style={{ fontSize: '1.5rem' }}></span>
                 Liste des matériels
               </div>
-              <CBadge color="light" text="dark" className="px-3 py-2">
-                {loading ? 'Chargement…' : `${materiels.length} élément${materiels.length > 1 ? 's' : ''}`}
+              <CBadge color="info" className="px-3 py-2">
+              {loading ? 'Chargement…' : `${materiels.length} élément${materiels.length > 1 ? 's' : ''}`}
               </CBadge>
+
             </div>
           </CCardHeader>
 

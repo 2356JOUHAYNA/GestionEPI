@@ -156,7 +156,7 @@ const EmployerCrud = () => {
             className="text-white mb-2"
             style={{ fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
           >
-            👥 Gestion des employés
+             Gestion des employés
           </h1>
           <p className="text-white-50" style={{ fontSize: '1.1rem' }}>
             Service généraux — CRUD des employés
@@ -174,7 +174,7 @@ const EmployerCrud = () => {
           >
             <div className="d-flex align-items-center justify-content-between">
               <div className="d-flex align-items-center">
-                <span className="me-2" style={{ fontSize: '1.5rem' }}>📋</span>
+                <span className="me-2" style={{ fontSize: '1.5rem' }}></span>
                 Gestion & enregistrement
               </div>
               <div className="d-flex gap-2">
@@ -220,7 +220,7 @@ const EmployerCrud = () => {
                   <CRow className="mb-3">
                     <CCol md={4}>
                       <CFormLabel className="fw-bold text-muted mb-2">
-                        <span className="me-2">📝</span>Nom *
+                        <span className="me-2"></span>Nom *
                       </CFormLabel>
                       <CFormInput
                         value={nom}
@@ -232,7 +232,7 @@ const EmployerCrud = () => {
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel className="fw-bold text-muted mb-2">
-                        <span className="me-2">🔎</span>Matricule *
+                        <span className="me-2"></span>Matricule *
                       </CFormLabel>
                       <CFormInput
                         value={matricule}
@@ -244,7 +244,7 @@ const EmployerCrud = () => {
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel className="fw-bold text-muted mb-2">
-                        <span className="me-2">👨‍💼</span>Manager (optionnel)
+                        <span className="me-2"></span>Manager (optionnel)
                       </CFormLabel>
                       <CFormSelect
                         value={managerId}
@@ -262,7 +262,7 @@ const EmployerCrud = () => {
                   <CRow className="mb-4">
                     <CCol md={4}>
                       <CFormLabel className="fw-bold text-muted mb-2">
-                        <span className="me-2">🏷️</span>Fonction (optionnelle)
+                        <span className="me-2"></span>Fonction (optionnelle)
                       </CFormLabel>
                       <CFormSelect
                         value={fonctionId}
@@ -323,7 +323,7 @@ const EmployerCrud = () => {
             <CCard className="border-0 shadow-sm" style={{ borderRadius: 10 }}>
               <CCardHeader className="bg-light border-0" style={{ borderRadius: '10px 10px 0 0' }}>
                 <div className="d-flex align-items-center justify-content-between">
-                  <h5 className="mb-0 fw-bold text-dark">📦 Liste des employés</h5>
+                  <h5 className="mb-0 fw-bold text-dark"> Liste des employés</h5>
                   <CBadge color="primary" className="px-3 py-2">
                     {rows.length} élément{rows.length > 1 ? 's' : ''}
                   </CBadge>

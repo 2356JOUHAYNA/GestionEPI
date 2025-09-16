@@ -11,7 +11,7 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilPlus, cilTrash } from '@coreui/icons'
 
-const API = 'http://127.0.0.1:8000/api' // remplace par ton instance axios/baseURL si besoin
+const API = 'http://127.0.0.1:8000/api'
 
 const emptyTaille = () => ({ nom: '', quantite: '' })
 
@@ -28,7 +28,7 @@ const Materiel = () => {
   const [loadingList, setLoadingList] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
 
-  // Charger les catégories (optionnelles)
+  // Charger les catégories
   useEffect(() => {
     const fetchCats = async () => {
       try {
@@ -114,7 +114,7 @@ const Materiel = () => {
       setNom('')
       setCategorieId('')
       setTailles([emptyTaille()])
-      loadMateriels() // rafraîchir la liste
+      loadMateriels()
     } catch (err) {
       const m = err?.response?.data?.message
         || err?.response?.data?.errors?.nom?.[0]
@@ -160,7 +160,7 @@ const Materiel = () => {
             className="text-white mb-2"
             style={{ fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
           >
-            🧱 Gestion du matériel
+             Gestion du matériel
           </h1>
           <p className="text-white-50" style={{ fontSize: '1.1rem' }}>
             Service généraux — Création de matériel et de tailles
@@ -178,11 +178,15 @@ const Materiel = () => {
             }}
           >
             <div className="d-flex align-items-center justify-content-between">
-              <div className="d-flex align-items-center">
-                <span className="me-2" style={{ fontSize: '1.5rem' }}>🛠️</span>
-                Créer un matériel & ses tailles
-              </div>
-              <CBadge color="light" text="dark" className="px-3 py-2">Formulaire</CBadge>
+              <div>Créer un matériel & ses tailles</div>
+              {/* ✅ Badge corrigé */}
+              <CBadge
+                color="success"
+                className="px-3 py-2"
+                style={{ fontSize: '0.95rem', fontWeight: '600' }}
+              >
+                Formulaire
+              </CBadge>
             </div>
           </CCardHeader>
 
@@ -202,26 +206,16 @@ const Materiel = () => {
                 <CForm onSubmit={handleSubmit} className="mb-0">
                   <CRow className="mb-3">
                     <CCol md={6}>
-                      <CFormLabel className="fw-bold text-muted mb-2">
-                        <span className="me-2">🏷️</span>Nom du matériel *
-                      </CFormLabel>
+                      <CFormLabel className="fw-bold text-muted mb-2">Nom du matériel *</CFormLabel>
                       <CFormInput
                         value={nom}
                         onChange={(e) => setNom(e.target.value)}
                         placeholder="Ex: Chaussure de sécurité"
-                        style={{
-                          borderRadius: 8,
-                          border: '2px solid #e2e8f0',
-                          padding: '12px 16px',
-                          fontSize: '1rem',
-                        }}
-                        className="form-control-lg"
+                        style={{ borderRadius: 8, border: '2px solid #e2e8f0', padding: '12px 16px' }}
                       />
                     </CCol>
                     <CCol md={6}>
-                      <CFormLabel className="fw-bold text-muted mb-2">
-                        <span className="me-2">🧩</span>Catégorie (optionnelle)
-                      </CFormLabel>
+                      <CFormLabel className="fw-bold text-muted mb-2">Catégorie (optionnelle)</CFormLabel>
                       <CFormSelect
                         value={categorieId}
                         onChange={(e) => setCategorieId(e.target.value)}
@@ -253,13 +247,13 @@ const Materiel = () => {
                     <CTable className="mb-0" hover>
                       <CTableHead>
                         <CTableRow style={{ backgroundColor: '#f1f5f9' }}>
-                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '50%' }}>
+                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569' }}>
                             Nom de la taille *
                           </CTableHeaderCell>
-                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569', width: '35%' }}>
+                          <CTableHeaderCell className="fw-bold py-3" style={{ color: '#475569' }}>
                             Quantité initiale (optionnelle)
                           </CTableHeaderCell>
-                          <CTableHeaderCell className="fw-bold text-center py-3" style={{ color: '#475569', width: '15%' }}>
+                          <CTableHeaderCell className="fw-bold text-center py-3" style={{ color: '#475569' }}>
                             Actions
                           </CTableHeaderCell>
                         </CTableRow>
@@ -293,7 +287,6 @@ const Materiel = () => {
                                 size="sm"
                                 disabled={tailles.length === 1}
                                 onClick={() => delRow(idx)}
-                                title="Supprimer la ligne"
                                 style={{ borderRadius: 6, fontWeight: 600 }}
                               >
                                 <CIcon icon={cilTrash} />
@@ -328,7 +321,7 @@ const Materiel = () => {
           </CCardBody>
         </CCard>
 
-        {/* Liste + suppression */}
+        {/* Liste des matériels */}
         <CCard className="shadow-lg border-0" style={{ borderRadius: 15, overflow: 'hidden' }}>
           <CCardHeader
             className="text-white fw-bold py-3"
@@ -339,11 +332,13 @@ const Materiel = () => {
             }}
           >
             <div className="d-flex align-items-center justify-content-between">
-              <div className="d-flex align-items-center">
-                <span className="me-2" style={{ fontSize: '1.5rem' }}>📦</span>
-                Liste des matériels
-              </div>
-              <CBadge color="light" text="dark" className="px-3 py-2">
+              <div>Liste des matériels</div>
+              {/* ✅ Badge corrigé */}
+              <CBadge
+                color="info"
+                className="px-3 py-2"
+                style={{ fontSize: '0.95rem', fontWeight: '600' }}
+              >
                 {loadingList ? 'Chargement...' : `${materiels.length} élément${materiels.length > 1 ? 's' : ''}`}
               </CBadge>
             </div>
@@ -375,11 +370,9 @@ const Materiel = () => {
                           size="sm"
                           disabled={deletingId === m.id}
                           onClick={() => handleDelete(m.id, m.nom)}
-                          title={`Supprimer ${m.nom}`}
                           style={{ borderRadius: 6, fontWeight: 600 }}
                         >
-                          <CIcon icon={cilTrash} className="me-1" />
-                          Supprimer
+                          <CIcon icon={cilTrash} className="me-1" /> Supprimer
                         </CButton>
                       </CTableDataCell>
                     </CTableRow>

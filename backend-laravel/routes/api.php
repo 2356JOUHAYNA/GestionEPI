@@ -30,20 +30,34 @@ use App\Http\Controllers\Api\MaterielCrudController;      // Api\
 use App\Http\Controllers\Api\ManagerCrudController;       // Api\
 use App\Http\Controllers\Api\EmployeCrudController;       // Api\
 use App\Http\Controllers\Api\FonctionController;          // Api\
+use App\Http\Controllers\Api\AuthController;              // Api\
 
 
 /**
- * ─────────────────────────────────────────────────────────────
- * TOUTES LES ROUTES SOUS /api/epi
- * ─────────────────────────────────────────────────────────────
+ * =================================================================
+ * 1) AUTH — HORS /epi  →  /api/auth/...
+ * =================================================================
+ */
+Route::prefix('auth')->group(function () {
+    Route::post('register', [AuthController::class, 'register']);
+    Route::post('login',    [AuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('me',      [AuthController::class, 'me']);
+        Route::post('logout', [AuthController::class, 'logout']);
+    });
+});
+
+
+/**
+ * =================================================================
+ * 2) /api/epi — Garde les routes de ta copine SANS CHANGEMENT
+ *    + tes ajouts (tout reste sous /api/epi)
+ * =================================================================
  */
 Route::prefix('epi')->group(function () {
 
-    /**
-     * ─────────────────────────────────────────────────────────
-     * 🟣 ROUTES DE TA COPINE
-     * ─────────────────────────────────────────────────────────
-     */
+    /** ─────────── ROUTES DE TA COPINE (inchangées) ─────────── */
 
     // Employés (lecture)
     Route::get('/employes', [EmployeController::class, 'index']);
@@ -84,11 +98,8 @@ Route::prefix('epi')->group(function () {
     Route::get('/stocks/{materiel}/history', [StockController::class, 'history']);
     Route::post('/stocks/move', [StockController::class, 'store']);
 
-    /**
-     * ─────────────────────────────────────────────────────────
-     * 🟢 TES ROUTES — AJOUTS
-     * ─────────────────────────────────────────────────────────
-     */
+
+    /** ─────────── TES ROUTES — AJOUTS (toujours sous /epi) ─────────── */
 
     // Dashboard stocks
     Route::get('/dashboard', [DashboardController::class, 'index']);
@@ -100,15 +111,17 @@ Route::prefix('epi')->group(function () {
     // Catégories
     Route::get('/categories', [CategorieController::class, 'index']);
 
-    // Mouvements de stock
+    // Mouvements de stock (⚠️ une seule définition de /mouvements)
     Route::post('/mouvements', [MouvementStockController::class, 'store'])->name('api.epi.mouvements.store');
-    
+    Route::delete('/mouvements/{id}', [MouvementStockController::class, 'destroyMouvement']);
+    Route::delete('/mouvements/by-materiel/{materielId}', [MouvementStockController::class, 'clearByMateriel']);
+    Route::delete('/mouvements/by-materiel/{materielId}/taille/{tailleId}', [MouvementStockController::class, 'clearByMaterielTaille']);
 
     // Tailles — variantes liées à un matériel
     Route::get('/materiels/{materiel}/tailles-rmb', [TailleController::class, 'getByMaterielBound'])->whereNumber('materiel');
     Route::get('/materiels/{materiel}/tailles-disponibles', [TailleController::class, 'getByMaterielFiltered'])->whereNumber('materiel');
 
-    // Tailles — global (recherche)  ✅ (corrigé : pas de ']' parasite)
+    // Tailles — global (recherche)
     Route::get('/tailles', [TailleController::class, 'indexGlobal']);
     Route::get('/tailles/search', [TailleController::class, 'searchGlobal']);
 
@@ -128,7 +141,7 @@ Route::prefix('epi')->group(function () {
     Route::put('/materiels/{id}', [MaterielController::class, 'update'])->whereNumber('id');
     Route::delete('/materiels/{id}', [MaterielController::class, 'destroy'])->whereNumber('id');
 
-    // Matériels — création complète (matériel + tailles + quantités initiales)
+    // Matériels — création complète
     Route::post('/materiels/full', [MaterielCrudController::class, 'storeFull']);
     Route::get('/materiels/with-tailles-crud', [MaterielCrudController::class, 'indexWithTailles']);
 
@@ -140,25 +153,11 @@ Route::prefix('epi')->group(function () {
     Route::delete('/managers/{manager}/employes/{employe}', [ManagerCrudController::class, 'detach'])
         ->whereNumber('manager')->whereNumber('employe');
 
-    // Employés — CRUD (écriture seulement ; la lecture reste sur EmployeController@index)
+    // Employés — CRUD (écriture)
     Route::post('/employes', [EmployeCrudController::class, 'store']);
     Route::put('/employes/{employe}', [EmployeCrudController::class, 'update'])->whereNumber('employe');
     Route::delete('/employes/{employe}', [EmployeCrudController::class, 'destroy'])->whereNumber('employe');
 
-    // Fonctions — lecture seule (pour le sélecteur côté front)
+    // Fonctions — lecture seule
     Route::get('/fonctions', [FonctionController::class, 'index']);
-
-
-    // Mouvements de stock
-Route::post('/mouvements', [MouvementStockController::class, 'store'])->name('api.epi.mouvements.store');
-
-// Supprimer une ligne de mouvement
-Route::delete('/mouvements/{id}', [MouvementStockController::class, 'destroyMouvement']);
-
-// Vider tout le stock d’un matériel
-Route::delete('/mouvements/by-materiel/{materielId}', [MouvementStockController::class, 'clearByMateriel']);
-
-// Vider le stock d’un matériel pour une taille précise
-Route::delete('/mouvements/by-materiel/{materielId}/taille/{tailleId}', [MouvementStockController::class, 'clearByMaterielTaille']);
-
 });

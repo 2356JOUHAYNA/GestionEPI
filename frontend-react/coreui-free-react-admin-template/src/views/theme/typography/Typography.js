@@ -198,7 +198,7 @@ const TailleCrud = () => {
             className="text-white mb-2"
             style={{ fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
           >
-            📏 Gestion des Tailles
+             Gestion des Tailles
           </h1>
           <p className="text-white-50" style={{ fontSize: '1.1rem' }}>
             Service généraux — Création, édition et suppression des tailles par matériel
@@ -216,7 +216,7 @@ const TailleCrud = () => {
             }}
           >
             <div className="d-flex align-items-center">
-              <span className="me-2" style={{ fontSize: '1.5rem' }}>🧰</span>
+              <span className="me-2" style={{ fontSize: '1.5rem' }}></span>
               Gestion & Enregistrement
             </div>
           </CCardHeader>
@@ -238,7 +238,7 @@ const TailleCrud = () => {
                 <CRow className="g-3 mb-0">
                   <CCol md={6}>
                     <CFormLabel className="fw-bold text-muted mb-2">
-                      <span className="me-2">🔧</span>Matériel
+                      <span className="me-2"></span>Matériel
                     </CFormLabel>
                     <CFormSelect
                       value={materielId}
@@ -253,7 +253,7 @@ const TailleCrud = () => {
                   </CCol>
                   <CCol md={6}>
                     <CFormLabel className="fw-bold text-muted mb-2">
-                      <span className="me-2">🔎</span>Recherche
+                      <span className="me-2"></span>Recherche
                     </CFormLabel>
                     <CFormInput
                       placeholder="Filtrer les tailles"
@@ -274,7 +274,7 @@ const TailleCrud = () => {
                   <CRow className="g-3 align-items-end">
                     <CCol md={6}>
                       <CFormLabel className="fw-bold text-muted mb-2">
-                        <span className="me-2">🏷️</span>Nom de la taille
+                        <span className="me-2"></span>Nom de la taille
                       </CFormLabel>
                       <CFormInput
                         placeholder="Ex : 38, M, XL…"
@@ -286,7 +286,7 @@ const TailleCrud = () => {
                     </CCol>
                     <CCol md={4}>
                       <CFormLabel className="fw-bold text-muted mb-2">
-                        <span className="me-2">📦</span>Quantité
+                        <span className="me-2"></span>Quantité
                       </CFormLabel>
                       <CFormInput
                         type="number"
@@ -323,7 +323,7 @@ const TailleCrud = () => {
             {/* Liste */}
             <CCard className="border-0 shadow-sm" style={{ borderRadius: 10 }}>
               <CCardHeader className="bg-light border-0" style={{ borderRadius: '10px 10px 0 0' }}>
-                <h5 className="mb-0 fw-bold text-dark">📋 Tailles du matériel sélectionné</h5>
+                <h5 className="mb-0 fw-bold text-dark">Tailles du matériel sélectionné</h5>
               </CCardHeader>
               <CCardBody className="p-0">
                 {loading ? (

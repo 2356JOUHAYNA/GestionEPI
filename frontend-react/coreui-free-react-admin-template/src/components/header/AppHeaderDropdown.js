@@ -1,7 +1,7 @@
+// src/components/header/AppHeaderDropdown.js
 import React from 'react'
 import {
   CAvatar,
-  CBadge,
   CDropdown,
   CDropdownDivider,
   CDropdownHeader,
@@ -9,88 +9,67 @@ import {
   CDropdownMenu,
   CDropdownToggle,
 } from '@coreui/react'
-import {
-  cilBell,
-  cilCreditCard,
-  cilCommentSquare,
-  cilEnvelopeOpen,
-  cilFile,
-  cilLockLocked,
-  cilSettings,
-  cilTask,
-  cilUser,
-} from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
-
+import { cilLockLocked, cilUser, cilSettings } from '@coreui/icons'
+import API from '../../api.js'
 import avatar8 from './../../assets/images/avatars/8.jpg'
 
-const AppHeaderDropdown = () => {
+export default function AppHeaderDropdown() {
+  // Utilisateur stocké après login
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null')
+    } catch {
+      return null
+    }
+  })()
+
+  const onLogout = async () => {
+    try {
+      await API.post('/auth/logout')
+    } catch {
+      // même si l'appel échoue, on nettoie côté front
+    }
+
+    // Nettoyage local
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    if (API?.defaults?.headers?.common?.Authorization) {
+      delete API.defaults.headers.common.Authorization
+    }
+
+    // HashRouter : remplacer l'URL pour éviter "Retour" vers une page privée
+    window.location.replace(`${window.location.origin}/#/login`)
+  }
+
   return (
     <CDropdown variant="nav-item">
       <CDropdownToggle placement="bottom-end" className="py-0 pe-0" caret={false}>
         <CAvatar src={avatar8} size="md" />
       </CDropdownToggle>
+
       <CDropdownMenu className="pt-0" placement="bottom-end">
-        <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
-        <CDropdownItem href="#">
-          <CIcon icon={cilBell} className="me-2" />
-          Updates
-          <CBadge color="info" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilEnvelopeOpen} className="me-2" />
-          Messages
-          <CBadge color="success" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilTask} className="me-2" />
-          Tasks
-          <CBadge color="danger" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilCommentSquare} className="me-2" />
-          Comments
-          <CBadge color="warning" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownHeader className="bg-body-secondary fw-semibold my-2">Settings</CDropdownHeader>
-        <CDropdownItem href="#">
+        <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">
+          {user?.name ? `Bonjour, ${user.name}` : 'Compte'}
+        </CDropdownHeader>
+
+        <CDropdownItem as="button" type="button">
           <CIcon icon={cilUser} className="me-2" />
-          Profile
+          Profil
         </CDropdownItem>
-        <CDropdownItem href="#">
+
+        <CDropdownItem as="button" type="button">
           <CIcon icon={cilSettings} className="me-2" />
-          Settings
+          Paramètres
         </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilCreditCard} className="me-2" />
-          Payments
-          <CBadge color="secondary" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilFile} className="me-2" />
-          Projects
-          <CBadge color="primary" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
+
         <CDropdownDivider />
-        <CDropdownItem href="#">
+
+        <CDropdownItem as="button" type="button" onClick={onLogout}>
           <CIcon icon={cilLockLocked} className="me-2" />
-          Lock Account
+          Se déconnecter
         </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>
   )
 }
-
-export default AppHeaderDropdown

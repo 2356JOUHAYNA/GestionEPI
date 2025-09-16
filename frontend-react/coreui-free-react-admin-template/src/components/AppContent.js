@@ -1,33 +1,42 @@
 import React, { Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
-import { CContainer, CSpinner } from '@coreui/react'
-
-// routes config
+import { Routes, Route, Navigate } from 'react-router-dom'
 import routes from '../routes'
 
-const AppContent = () => {
+export default function AppContent() {
+  const isAuth = !!localStorage.getItem('token')
+
   return (
-    <CContainer className="px-4" lg>
-      <Suspense fallback={<CSpinner color="primary" />}>
-        <Routes>
-          {routes.map((route, idx) => {
+    <Suspense fallback={<div className="pt-3 text-center">Chargement…</div>}>
+      <Routes>
+        {routes.map((r, i) => {
+          const Element = r.element
+          if (!Element) return null
+
+          if (r.private) {
             return (
-              route.element && (
-                <Route
-                  key={idx}
-                  path={route.path}
-                  exact={route.exact}
-                  name={route.name}
-                  element={<route.element />}
-                />
-              )
+              <Route
+                key={i}
+                path={r.path}
+                element={isAuth ? <Element /> : <Navigate to="/login" replace />}
+              />
             )
-          })}
-          <Route path="/" element={<Navigate to="dashboard" replace />} />
-        </Routes>
-      </Suspense>
-    </CContainer>
+          }
+          if (r.guestOnly) {
+            return (
+              <Route
+                key={i}
+                path={r.path}
+                element={!isAuth ? <Element /> : <Navigate to="/affectation" replace />}
+              />
+            )
+          }
+          return <Route key={i} path={r.path} element={<Element />} />
+        })}
+
+        {/* Fallbacks */}
+        <Route path="/" element={<Navigate to={isAuth ? '/affectation' : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={isAuth ? '/affectation' : '/login'} replace />} />
+      </Routes>
+    </Suspense>
   )
 }
-
-export default React.memo(AppContent)
